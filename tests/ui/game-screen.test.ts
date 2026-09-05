@@ -107,6 +107,27 @@ describe('対局画面', () => {
     cleanup();
   });
 
+  // 最適解の 32% は「猫が乗っている / 歩いて行けるタイルを押す」手なので、
+  // タップは常にスライドを優先する。歩行の手段があることを画面に明示しておく。
+  it('タップとスワイプの役割を画面に出す', () => {
+    open('W1-1');
+    const line = q('.controls-line').textContent!;
+    expect(line).toContain('タップ');
+    expect(line).toContain('スワイプ');
+    expect(line).toContain('あるく');
+    cleanup();
+  });
+
+  it('スライドできるマスをタップしたらスライドする（歩行より優先）', () => {
+    open('W3-1');
+    // (3,4) は歩いて行けるが押すこともできる。タップではスライドが起きる。
+    const before = q('.moves').textContent;
+    tile(3, 4).click();
+    expect(before).toBe('0');
+    expect(q('.moves').textContent).toBe('1');
+    cleanup();
+  });
+
   it('もどるでステージ選択へ行く', () => {
     open('W1-1');
     q('.back-btn').click();

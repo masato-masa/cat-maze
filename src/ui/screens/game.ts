@@ -51,6 +51,11 @@ export function renderGameScreen(
 
       <div class="fish-line" hidden><span class="fish-count"></span></div>
 
+      <p class="controls-line">
+        <span class="ctl"><b>タップ</b> タイルを うごかす</span>
+        <span class="ctl"><b>スワイプ / やじるし</b> ねこが あるく</span>
+      </p>
+
       <footer class="game-footer">
         <button class="btn undo-btn" type="button">もどす</button>
         <button class="btn retry-btn" type="button">やりなおし</button>

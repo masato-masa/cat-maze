@@ -25,7 +25,8 @@
   background: var(--bg-soft);
   border-radius: calc(var(--radius) + 4px);
   padding: calc(var(--gap) / 2);
-  touch-action: manipulation;
+  /* スワイプは自前で扱うので、ブラウザのジェスチャに取られないようにする */
+  touch-action: none;
 }
 
 .grid-layer,

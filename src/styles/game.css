@@ -66,6 +66,21 @@
   min-height: 1.4em;
 }
 
+.controls-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+
+.controls-line b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .game-footer {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

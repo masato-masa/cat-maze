@@ -41,6 +41,13 @@ export class InputManager {
   private swipeEl: HTMLElement | null = null;
   private startX = 0;
   private startY = 0;
+  /**
+   * スワイプのあとにブラウザが click を出すことがある。
+   * そのまま通すと「歩く」と「スライド」が二重に起きてしまうので、
+   * 直後の 1 回だけ握りつぶす。次の touchstart で新しい操作が始まるため、
+   * 時間ではなく回数で打ち切るほうが後続のタップを巻き込まない。
+   */
+  private swallowNextClick = false;
 
   constructor(target: EventTarget) {
     this.target = target;
@@ -78,9 +85,19 @@ export class InputManager {
     this.swipeEl = el;
     el.addEventListener('touchstart', this.onTouchStart, { passive: true });
     el.addEventListener('touchend', this.onTouchEnd, { passive: true });
+    // タップ処理より先に見たいので捕捉フェーズで受ける
+    el.addEventListener('click', this.onClickCapture, true);
   }
 
+  private onClickCapture = (ev: Event): void => {
+    if (!this.swallowNextClick) return;
+    this.swallowNextClick = false;
+    ev.stopPropagation();
+    ev.preventDefault();
+  };
+
   private onTouchStart = (ev: TouchEvent): void => {
+    this.swallowNextClick = false; // 新しい操作の始まり
     if (ev.touches.length > 1) return;
     const t = ev.touches[0];
     if (!t) return;
@@ -97,6 +114,7 @@ export class InputManager {
     const adx = Math.abs(dx);
     const ady = Math.abs(dy);
     if (Math.max(adx, ady) <= SWIPE_THRESHOLD) return; // タップはクリック側で処理する
+    this.swallowNextClick = true;
     this.emit('walk', adx > ady ? (dx > 0 ? 1 : 3) : dy > 0 ? 2 : 0);
   };
 
@@ -105,6 +123,7 @@ export class InputManager {
     if (this.swipeEl) {
       this.swipeEl.removeEventListener('touchstart', this.onTouchStart as EventListener);
       this.swipeEl.removeEventListener('touchend', this.onTouchEnd as EventListener);
+      this.swipeEl.removeEventListener('click', this.onClickCapture, true);
       this.swipeEl = null;
     }
     this.listeners.clear();
