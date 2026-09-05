@@ -1,0 +1,28 @@
+{
+  "name": "cat-maze",
+  "version": "0.1.0",
+  "description": "ねこめいろ — 穴スライド式の迷路パズル",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "play": "node --experimental-strip-types src/cli/play.ts",
+    "verify": "node --experimental-strip-types src/solver/cli.ts verify"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
+  },
+  "private": true
+}
