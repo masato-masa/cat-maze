@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "play": "node --experimental-strip-types src/cli/play.ts",
-    "verify": "node --experimental-strip-types src/solver/cli.ts verify"
+    "verify": "node --experimental-strip-types src/solver/cli.ts verify",
+    "deploy": "node scripts/deploy-pages.mjs"
   },
   "author": "",
   "license": "ISC",
