@@ -1,5 +1,7 @@
 # ねこめいろ（Cat Maze）
 
+**▶ あそぶ: https://masato-masa.github.io/cat-maze/**
+
 盤面のタイルをスライドして迷路を作り替えながら、猫を歩かせておうちへ導く手数最適化パズル。
 
 ## このゲームの核
@@ -52,6 +54,23 @@ npm run play      # テキスト版で遊ぶ（ルールの手触り確認用）
 ```
 
 `npm run play W3-4` のようにステージ ID を渡すとそこから始まる。
+
+### 公開する
+
+```bash
+npm run deploy
+```
+
+本番ビルドして `dist/` を `gh-pages` ブランチへ push する。
+GitHub Pages はそのブランチを公開する設定にしてある。
+本番ビルドのときだけベースパスが `/cat-maze/` になる（開発サーバは `/` のまま）。
+
+CI から自動デプロイしたい場合は `.github/workflows/` にワークフローを置けばよいが、
+push するトークンに `workflow` スコープが要る。付与するには一度だけ次を実行する。
+
+```bash
+gh auth refresh -s workflow
+```
 
 ### 構成
 

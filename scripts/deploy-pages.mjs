@@ -8,11 +8,15 @@ import { join } from 'node:path';
 const WORKTREE = '.gh-pages';
 const BRANCH = 'gh-pages';
 
-const run = (cmd, args, opts = {}) =>
-  execFileSync(cmd, args, { stdio: 'inherit', shell: process.platform === 'win32', ...opts });
+// git は実行ファイルを直接叩く。shell 経由にすると Windows で
+// 引数中の空白が分割されてコミットメッセージが壊れる。
+const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { stdio: 'inherit', ...opts });
 
-const capture = (cmd, args) =>
-  execFileSync(cmd, args, { encoding: 'utf8', shell: process.platform === 'win32' }).trim();
+const capture = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8' }).trim();
+
+// npm は Windows では npm.cmd なので shell を通す必要がある
+const runNpm = (args) =>
+  execFileSync('npm', args, { stdio: 'inherit', shell: process.platform === 'win32' });
 
 function cleanWorktree() {
   try {
@@ -24,7 +28,7 @@ function cleanWorktree() {
 }
 
 console.log('ビルドします...');
-run('npm', ['run', 'build']);
+runNpm(['run', 'build']);
 
 console.log(`${BRANCH} ブランチを用意します...`);
 cleanWorktree();
