@@ -1,0 +1,199 @@
+/* 背景セル層と絶対配置タイル層を重ねる構造は 2048 の index.html / main.css に倣う。
+   Copyright (c) 2014 Gabriele Cirulli — MIT License */
+
+.board-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px 0;
+}
+
+.board {
+  --gap: 4px;
+  /* 1 マスの大きさは、横に入る大きさと縦に入る大きさの小さい方で決まる。
+     こうすると縦長・横長どちらの盤面でも画面からはみ出さない。 */
+  --avail-w: min(92vw, 460px);
+  --avail-h: 46vh;
+  --step: min(calc(var(--avail-w) / var(--cols)), calc(var(--avail-h) / var(--rows)));
+  --cell: calc(var(--step) - var(--gap));
+
+  position: relative;
+  width: calc(var(--step) * var(--cols));
+  height: calc(var(--step) * var(--rows));
+  background: var(--bg-soft);
+  border-radius: calc(var(--radius) + 4px);
+  padding: calc(var(--gap) / 2);
+  touch-action: manipulation;
+}
+
+.grid-layer,
+.tile-layer,
+.actor-layer {
+  position: absolute;
+  inset: calc(var(--gap) / 2);
+}
+
+.grid-layer {
+  z-index: 1;
+}
+
+.tile-layer {
+  z-index: 2;
+  pointer-events: none;
+}
+
+.actor-layer {
+  z-index: 3;
+  pointer-events: none;
+}
+
+.grid-cell,
+.tile,
+.cat {
+  position: absolute;
+  width: var(--cell);
+  height: var(--cell);
+  transform: translate(calc(var(--c) * var(--step)), calc(var(--r) * var(--step)));
+}
+
+.grid-cell {
+  border-radius: 12px;
+  background: transparent;
+  transition: background var(--anim) ease-out;
+}
+
+.grid-cell.hole {
+  background: var(--hole);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.28);
+}
+
+.grid-cell.reachable {
+  background: var(--reach);
+}
+
+/* 到達領域はタイルの背景そのものを変えて示す。
+   背景セルはタイルに隠れて見えないため。 */
+.tile.reachable .tile-bg {
+  fill: var(--reach);
+}
+
+.tile {
+  transition: transform var(--anim) ease-out;
+  pointer-events: auto;
+  cursor: default;
+}
+
+.tile.slidable {
+  cursor: pointer;
+}
+
+.tile.slidable .tile-bg {
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 7 5;
+}
+
+.tile.hinted .tile-bg {
+  stroke: var(--goal);
+  stroke-width: 5;
+  stroke-dasharray: none;
+  animation: hint-pulse 900ms ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+
+.tile-svg,
+.cat-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tile-bg {
+  fill: var(--tile);
+  stroke: none;
+}
+
+.tile-bg.tile-fixed {
+  fill: var(--tile-fixed);
+}
+
+.tile-stud {
+  fill: var(--stud);
+}
+
+.tile-road {
+  stroke: var(--road);
+  stroke-width: 22;
+  stroke-linecap: round;
+}
+
+.tile-road-hub {
+  fill: var(--road-hub);
+}
+
+.tile-cap {
+  fill: var(--road-hub);
+}
+
+.tile-goal path {
+  fill: var(--goal);
+}
+
+.tile-goal .tile-goal-door {
+  fill: var(--tile);
+}
+
+.tile-fish path {
+  fill: var(--fish);
+}
+
+.tile-fish .tile-fish-eye {
+  fill: var(--tile);
+}
+
+.cat {
+  transition: transform var(--anim-cat) ease-out;
+}
+
+.cat-body path,
+.cat-body circle {
+  fill: var(--cat);
+}
+
+.cat-eye {
+  fill: var(--cat-ink);
+}
+
+.cat-nose {
+  fill: var(--cat-ink);
+}
+
+.cat-whisker line {
+  stroke: var(--cat);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.cat.cleared {
+  animation: cat-hop 520ms ease-out 2;
+}
+
+@keyframes cat-hop {
+  40% {
+    transform: translate(calc(var(--c) * var(--step)), calc(var(--r) * var(--step) - 14%));
+  }
+}
+
+/* 初期描画ではアニメーションさせない */
+.board.no-anim .tile,
+.board.no-anim .cat,
+.board.no-anim .grid-cell {
+  transition: none;
+}

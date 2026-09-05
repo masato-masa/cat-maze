@@ -1,0 +1,148 @@
+.game-screen {
+  gap: 4px;
+  /* フッターが必ず見えるように、画面の高さに収める */
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.game-header {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.level-title {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.level-id {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.level-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.move-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+
+.moves {
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.moves-label {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+
+.hint-line {
+  margin: 2px 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  min-height: 1.2em;
+}
+
+.fish-line {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--fish);
+  min-height: 1.4em;
+}
+
+.game-footer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.game-footer .btn {
+  white-space: nowrap;
+  font-size: 0.95rem;
+  padding: 12px 6px;
+}
+
+.game-message {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(3px);
+  z-index: 10;
+  animation: fade-in 200ms ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.message-card {
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 28px 24px;
+  text-align: center;
+  width: min(88vw, 360px);
+}
+
+.message-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  font-size: 2.6rem;
+  margin: 12px 0 4px;
+}
+
+.stars .star {
+  animation: star-pop 380ms cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+  animation-delay: calc(var(--i) * 160ms);
+}
+
+@keyframes star-pop {
+  from {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.18);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.message-moves {
+  margin: 0 0 18px;
+  color: var(--ink-soft);
+}
+
+.message-buttons {
+  display: grid;
+  gap: 8px;
+}

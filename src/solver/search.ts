@@ -54,14 +54,18 @@ function dfs(s: GameState, depth: number, seen: Map<string, number>, path: Pos[]
   return null;
 }
 
-/** 反復深化。maxDepth まで探して最短手順を返す。見つからなければ null。 */
-export function solve(def: LevelDef, maxDepth: number): Pos[] | null {
-  const start = newGame(def);
+/** 途中の状態から最短手順を探す。ヒント機能が使う。 */
+export function solveFrom(start: GameState, maxDepth: number): Pos[] | null {
   for (let d = 0; d <= maxDepth; d++) {
     const found = dfs(start, d, new Map(), []);
     if (found) return found;
   }
   return null;
+}
+
+/** 反復深化。maxDepth まで探して最短手順を返す。見つからなければ null。 */
+export function solve(def: LevelDef, maxDepth: number): Pos[] | null {
+  return solveFrom(newGame(def), maxDepth);
 }
 
 export function hasSolutionWithin(def: LevelDef, depth: number): boolean {

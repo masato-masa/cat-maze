@@ -1,0 +1,138 @@
+.home-screen {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px;
+}
+
+.home-art {
+  width: 132px;
+  height: 132px;
+}
+
+.home-title {
+  margin: 4px 0 0;
+  font-size: 2.4rem;
+  letter-spacing: 0.08em;
+}
+
+.home-sub {
+  margin: 0 0 24px;
+  color: var(--ink-soft);
+}
+
+.home-buttons {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 300px);
+}
+
+.home-stars {
+  margin: 20px 0 4px;
+  color: var(--star);
+  font-weight: 700;
+}
+
+.menu-header {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.menu-title {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.total-stars {
+  color: var(--star);
+  font-weight: 700;
+}
+
+.world {
+  margin-bottom: 22px;
+}
+
+.world-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  border-bottom: 2px solid var(--line);
+  padding-bottom: 6px;
+}
+
+.world-stars {
+  color: var(--star);
+  font-size: 0.85rem;
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.level-card {
+  appearance: none;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  transition: transform 80ms ease-out;
+}
+
+.level-card:active:not(.locked) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.level-card.locked {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  cursor: default;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+.level-card.perfect {
+  border-color: var(--star);
+}
+
+.level-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.level-label {
+  font-size: 0.65rem;
+  color: var(--ink-soft);
+  text-align: center;
+  line-height: 1.15;
+  min-height: 2.3em;
+  overflow: hidden;
+}
+
+.level-stars {
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.lock {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
