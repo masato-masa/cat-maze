@@ -1,0 +1,111 @@
+import type { LevelDef } from '../core/types.ts';
+
+/**
+ * W4 うごくおうち — ゴールタイルもスライドできる。
+ * 「猫が行く」から「おうちを連れてくる」へ発想を切り替えさせる。
+ * どのステージも、最適解のどこかでゴールタイル自身を押す。
+ */
+export const W4: LevelDef[] = [
+  {
+    id: 'W4-1',
+    name: 'おうちが うごく',
+    width: 5,
+    height: 5,
+    layout: [
+      ['X', 'NS', 'NES', 'FIXED:NW', 'ES'],
+      ['FIXED:NE', 'ES', 'SW', 'FIXED:ES', 'FIXED:EW'],
+      ['GOAL:ESW', 'HOLE', 'FIXED:ESW', 'FIXED:X', 'NE'],
+      ['EW', 'SW', 'FIXED:NSW', 'NSW', 'FIXED:EW'],
+      ['FIXED:NW', 'FIXED:NES', 'NE', 'FIXED:ES', 'FIXED:NW'],
+    ],
+    catStart: [3, 0],
+    optimalMoves: 2,
+    parMoves: 4,
+    hint: 'おうちも うごかせる！',
+  },
+  {
+    id: 'W4-2',
+    name: 'むかえに いく',
+    width: 5,
+    height: 5,
+    layout: [
+      ['NE', 'FIXED:NEW', 'SW', 'FIXED:NW', 'HOLE'],
+      ['FIXED:NE', 'FIXED:SW', 'FIXED:NSW', 'NW', 'GOAL:NSW'],
+      ['NE', 'FIXED:NEW', 'EW', 'NEW', 'FIXED:ESW'],
+      ['FIXED:ES', 'NE', 'NSW', 'FIXED:NEW', 'FIXED:NS'],
+      ['ESW', 'ESW', 'SW', 'FIXED:EW', 'FIXED:NS'],
+    ],
+    catStart: [2, 3],
+    optimalMoves: 3,
+    parMoves: 5,
+    hint: 'ねこが いくか、おうちを よぶか',
+  },
+  {
+    id: 'W4-3',
+    name: 'ひきよせる',
+    width: 5,
+    height: 5,
+    layout: [
+      ['ES', 'GOAL:NE', 'FIXED:EW', 'FIXED:EW', 'FIXED:SW'],
+      ['FIXED:NEW', 'NSW', 'SW', 'SW', 'FIXED:X'],
+      ['NES', 'FIXED:NEW', 'HOLE', 'NEW', 'FIXED:ESW'],
+      ['EW', 'NS', 'SW', 'NSW', 'FIXED:ES'],
+      ['FIXED:SW', 'FIXED:EW', 'FIXED:NE', 'NE', 'NS'],
+    ],
+    catStart: [2, 3],
+    optimalMoves: 4,
+    parMoves: 6,
+    hint: 'おうちの すじを そろえてから おす',
+  },
+  {
+    id: 'W4-4',
+    name: 'いえを はこぶ',
+    width: 5,
+    height: 5,
+    layout: [
+      ['NES', 'FIXED:SW', 'ESW', 'NW', 'NEW'],
+      ['NSW', 'FIXED:NS', 'NS', 'FIXED:ESW', 'FIXED:NSW'],
+      ['FIXED:NS', 'NE', 'HOLE', 'NW', 'ES'],
+      ['FIXED:X', 'FIXED:NS', 'EW', 'GOAL:NSW', 'FIXED:SW'],
+      ['EW', 'FIXED:NEW', 'NS', 'FIXED:NEW', 'FIXED:ES'],
+    ],
+    catStart: [0, 3],
+    optimalMoves: 5,
+    parMoves: 7,
+    hint: 'いちど とおざけてから ひきよせる ことも ある',
+  },
+  {
+    id: 'W4-5',
+    name: 'いっしょに',
+    width: 5,
+    height: 5,
+    layout: [
+      ['ESW', 'FIXED:NSW', 'ESW', 'NSW', 'FIXED:NW'],
+      ['FIXED:X', 'NE', 'NEW', 'NW', 'NEW'],
+      ['FIXED:NES', 'NEW', 'FIXED:NSW', 'FIXED:EW', 'NEW'],
+      ['FIXED:NE', 'GOAL:ESW', 'NE', 'HOLE', 'NES'],
+      ['EW', 'NS', 'FIXED:EW', 'FIXED:EW', 'FIXED:NW'],
+    ],
+    catStart: [3, 4],
+    optimalMoves: 5,
+    parMoves: 7,
+    hint: 'ねこも おうちも うごく',
+  },
+  {
+    id: 'W4-6',
+    name: 'おおいそぎ',
+    width: 5,
+    height: 5,
+    layout: [
+      ['FIXED:X', 'NEW', 'HOLE', 'FIXED:NW', 'X'],
+      ['SW', 'NS', 'FIXED:EW', 'FIXED:NES', 'FIXED:NW'],
+      ['FIXED:ESW', 'NSW', 'NEW', 'NS', 'FIXED:EW'],
+      ['EW', 'GOAL:EW', 'NW', 'NW', 'FIXED:NW'],
+      ['FIXED:NES', 'FIXED:NE', 'NSW', 'ESW', 'FIXED:NW'],
+    ],
+    catStart: [2, 1],
+    optimalMoves: 6,
+    parMoves: 8,
+    hint: 'いちばん みじかい みちを さがそう',
+  },
+];

@@ -13,7 +13,7 @@ export const W1: LevelDef[] = [
     // 押せるのは真ん中の行だけ。押すと道がつながる、それだけを教える。
     layout: [
       ['X', 'FIXED:X', 'X', 'X'],
-      ['E', 'HOLE', 'EW', 'GOAL:W'],
+      ['E', 'HOLE', 'EW', 'FIXED:GOAL:W'],
       ['X', 'FIXED:X', 'X', 'X'],
       ['X', 'FIXED:X', 'X', 'X'],
     ],

@@ -1,0 +1,107 @@
+import type { LevelDef } from '../core/types.ts';
+
+/**
+ * W2 いしだたみ — 固定タイル（動かない石）が押せる範囲を切ることを教える。
+ * ゴールはまだ固定。動くゴールは W4 の主題。
+ */
+export const W2: LevelDef[] = [
+  {
+    id: 'W2-1',
+    name: 'いしのかべ',
+    width: 4,
+    height: 4,
+    layout: [
+      ['FIXED:NS', 'FIXED:NW', 'HOLE', 'FIXED:NW'],
+      ['ES', 'NW', 'ES', 'FIXED:SW'],
+      ['EW', 'EW', 'NE', 'FIXED:NS'],
+      ['FIXED:GOAL:NE', 'FIXED:NW', 'NE', 'FIXED:X'],
+    ],
+    catStart: [1, 0],
+    optimalMoves: 3,
+    parMoves: 5,
+    hint: 'いしは うごかせない。おせる むきが かぎられる',
+  },
+  {
+    id: 'W2-2',
+    name: 'うごかない いし',
+    width: 4,
+    height: 4,
+    layout: [
+      ['NW', 'FIXED:NS', 'FIXED:NE', 'FIXED:NE'],
+      ['FIXED:ES', 'SW', 'ES', 'FIXED:NW'],
+      ['NS', 'ES', 'FIXED:NS', 'NW'],
+      ['HOLE', 'NE', 'FIXED:GOAL:SW', 'NW'],
+    ],
+    catStart: [2, 0],
+    optimalMoves: 3,
+    parMoves: 5,
+    hint: 'ねこごと はこばれる てを さがそう',
+  },
+  {
+    id: 'W2-3',
+    name: 'すきま',
+    width: 4,
+    height: 4,
+    layout: [
+      ['FIXED:ES', 'FIXED:SW', 'FIXED:X', 'NE'],
+      ['FIXED:X', 'NE', 'SW', 'EW'],
+      ['HOLE', 'ES', 'SW', 'FIXED:GOAL:EW'],
+      ['FIXED:ES', 'ES', 'EW', 'FIXED:EW'],
+    ],
+    catStart: [1, 1],
+    optimalMoves: 4,
+    parMoves: 6,
+    hint: 'あなを どの すじへ もっていく？',
+  },
+  {
+    id: 'W2-4',
+    name: 'ひろば',
+    width: 5,
+    height: 5,
+    layout: [
+      ['FIXED:NSW', 'FIXED:NES', 'FIXED:NS', 'NE', 'FIXED:ES'],
+      ['FIXED:GOAL:NS', 'NES', 'ES', 'FIXED:NES', 'FIXED:NE'],
+      ['NS', 'ES', 'EW', 'FIXED:NES', 'EW'],
+      ['NES', 'FIXED:NES', 'HOLE', 'FIXED:NS', 'FIXED:X'],
+      ['NES', 'NS', 'NSW', 'X', 'FIXED:NW'],
+    ],
+    catStart: [4, 1],
+    optimalMoves: 4,
+    parMoves: 6,
+    hint: 'ばんめんが ひろくなった。まず あなを みる',
+  },
+  {
+    id: 'W2-5',
+    name: 'いしだたみ',
+    width: 5,
+    height: 5,
+    layout: [
+      ['FIXED:X', 'FIXED:NE', 'NS', 'X', 'HOLE'],
+      ['ESW', 'ESW', 'NSW', 'NS', 'EW'],
+      ['NSW', 'FIXED:X', 'ES', 'NEW', 'X'],
+      ['FIXED:GOAL:NES', 'FIXED:SW', 'FIXED:SW', 'FIXED:EW', 'FIXED:SW'],
+      ['FIXED:NS', 'FIXED:ESW', 'FIXED:NES', 'ESW', 'FIXED:NES'],
+    ],
+    catStart: [2, 3],
+    optimalMoves: 5,
+    parMoves: 7,
+    hint: 'したの れつは ぜんぶ いし。うえで くみたてる',
+  },
+  {
+    id: 'W2-6',
+    name: 'ぬけみち',
+    width: 5,
+    height: 5,
+    layout: [
+      ['NS', 'NSW', 'EW', 'NEW', 'FIXED:NSW'],
+      ['FIXED:NS', 'NS', 'FIXED:NSW', 'SW', 'FIXED:ESW'],
+      ['NS', 'NS', 'FIXED:GOAL:NESW', 'NE', 'FIXED:NSW'],
+      ['FIXED:NE', 'NES', 'NE', 'HOLE', 'X'],
+      ['NES', 'FIXED:NES', 'FIXED:NSW', 'FIXED:NS', 'FIXED:NSW'],
+    ],
+    catStart: [0, 3],
+    optimalMoves: 5,
+    parMoves: 7,
+    hint: 'ねこを はこびながら みちを つくる',
+  },
+];

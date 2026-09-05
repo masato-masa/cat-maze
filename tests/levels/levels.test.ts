@@ -4,8 +4,38 @@ import { validateLevel } from '../../src/levels/schema.ts';
 import { newGame } from '../../src/core/game.ts';
 
 describe('levels', () => {
-  it('W1 は 6 ステージある', () => {
-    expect(WORLDS[0]!.levels).toHaveLength(6);
+  it('5 ワールド・全 30 ステージある', () => {
+    expect(WORLDS).toHaveLength(5);
+    expect(ALL_LEVELS).toHaveLength(30);
+    for (const w of WORLDS) expect(w.levels, `${w.id}`).toHaveLength(6);
+  });
+
+  it('W1〜W3 のゴールは固定（動くゴールは W4 の主題）', () => {
+    for (const def of ALL_LEVELS) {
+      if (!/^W[123]-/.test(def.id)) continue;
+      const goal = def.layout.flat().find((c) => c.includes('GOAL'));
+      expect(goal, `${def.id} のゴールが固定されていない`).toContain('FIXED:');
+    }
+  });
+
+  // 新概念は「安全な練習ステージ」で単独導入するため、ワールドの先頭では
+  // 手数が前ワールドの終わりより下がってよい（仕様書 §9.2）。
+  // 上がっていくべきなのは「ワールド内の並び」と「ワールドごとの上限」。
+  it('ワールド内では手数が減らない', () => {
+    for (const w of WORLDS) {
+      for (let i = 1; i < w.levels.length; i++) {
+        expect(w.levels[i]!.optimalMoves, `${w.levels[i]!.id}`).toBeGreaterThanOrEqual(
+          w.levels[i - 1]!.optimalMoves,
+        );
+      }
+    }
+  });
+
+  it('ワールドごとの最大手数は下がらない', () => {
+    const max = WORLDS.map((w) => Math.max(...w.levels.map((l) => l.optimalMoves)));
+    for (let i = 1; i < max.length; i++) {
+      expect(max[i]!, `${WORLDS[i]!.id} の最大手数が前より小さい`).toBeGreaterThanOrEqual(max[i - 1]!);
+    }
   });
 
   it('すべてのステージが妥当', () => {
