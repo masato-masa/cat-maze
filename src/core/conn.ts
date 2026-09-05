@@ -50,12 +50,12 @@ export function parseConn(s: string): Conn {
   for (const ch of s) {
     const i = LETTERS.indexOf(ch as (typeof LETTERS)[number]);
     if (i < 0) throw new Error(`不正な方角文字: ${ch} (in "${s}")`);
-    c |= BITS[i];
+    c |= BITS[i]!;
   }
   return c;
 }
 
 export function connToString(c: Conn): string {
-  const s = LETTERS.filter((_, i) => (c & BITS[i]) !== 0).join('');
+  const s = LETTERS.filter((_, i) => (c & BITS[i]!) !== 0).join('');
   return s === '' ? 'X' : s;
 }
