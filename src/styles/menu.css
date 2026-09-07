@@ -6,8 +6,10 @@
 }
 
 .home-art {
+  position: relative;
   width: 132px;
   height: 132px;
+  margin: 0 auto;
 }
 
 .home-title {
