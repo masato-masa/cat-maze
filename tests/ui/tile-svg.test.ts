@@ -12,21 +12,19 @@ const tile = (spec: string, kind: Tile['kind'] = 'road', fixed = false, fish = f
 });
 
 describe('tileSvg', () => {
-  it('道の無いタイルには通路画像を出さない', () => {
-    expect(tileSvg(tile('X'))).not.toContain('tile-road-img');
+  it('道の無いタイルには通路 SVG を出さない', () => {
+    expect(tileSvg(tile('X'))).not.toContain('tile-road-svg');
   });
 
-  it('開いている方角の数に応じた専用の通路パーツを選ぶ', () => {
-    expect(tileSvg(tile('N'))).toContain('piece-end');
-    expect(tileSvg(tile('NS'))).toContain('road_straight');
-    expect(tileSvg(tile('NE'))).toContain('road_corner');
-    expect(tileSvg(tile('NES'))).toContain('road_t');
-    expect(tileSvg(tile('NESW'))).toContain('road_cross');
+  it('開いている方角の数だけ線を引く（太さ・縁取りは形によらず共通）', () => {
+    expect((tileSvg(tile('N')).match(/<line/g) ?? []).length).toBe(2); // 縁取り + 塗りの2層
+    expect((tileSvg(tile('NS')).match(/<line/g) ?? []).length).toBe(4);
+    expect((tileSvg(tile('NESW')).match(/<line/g) ?? []).length).toBe(8);
   });
 
-  it('行き止まりだけ専用クラスが付く', () => {
-    expect(tileSvg(tile('N'))).toContain('piece-end');
-    expect(tileSvg(tile('NS'))).not.toContain('piece-end');
+  it('道が無いタイルには中心の丸も出さない', () => {
+    expect(tileSvg(tile('X'))).not.toContain('tile-road-outline');
+    expect(tileSvg(tile('NS'))).toContain('tile-road-outline');
   });
 
   it('固定タイルには専用のクラスと画像が付く', () => {

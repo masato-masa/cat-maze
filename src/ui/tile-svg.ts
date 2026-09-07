@@ -1,63 +1,46 @@
-// 盤面の絵はすべて ChatGPT で生成したイラスト素材（src/assets/img）を貼り合わせて作る。
-// タイルの開いている方角（1〜4 方向）に応じて、通路パーツを 1 枚選び回転させるだけで
-// 組合せ爆発（16通り）を避けている。回転は CSS クラスで行い、色は一切直書きしない。
-// カーブ・T字・十字は直線パーツを組み合わせて作ると重なり部分が不自然になるため、
-// それぞれ専用の自然な1枚絵として用意し、道幅も実測してすべて揃えてある。
-import { ALL_DIRS, isOpen, opposite } from '../core/conn.ts';
+// タイルの背景・ねこ・ゴールの家・さかなは ChatGPT で生成したイラスト素材
+// （src/assets/img）を使う。通路だけは、形（直線／カーブ／T字／十字）ごとに
+// 個別の画像を生成すると太さや縁取りがどうしても微妙にズレてしまうため、
+// コードで統一的に描く。中心から開いている方角へ線を引き、中心にハブの円を
+// 置くだけなので、どんな組合せでも太さ・縁取りが 1px も違わず完全に一致する。
+import { ALL_DIRS, isOpen } from '../core/conn.ts';
 import type { Dir } from '../core/conn.ts';
 import type { Tile } from '../core/types.ts';
 
 import catUrl from '../assets/img/cat.png';
 import fishUrl from '../assets/img/fish.png';
 import houseUrl from '../assets/img/house.png';
-import roadCornerUrl from '../assets/img/road_corner.png';
-import roadCrossUrl from '../assets/img/road_cross.png';
-import roadEndUrl from '../assets/img/road_end.png';
-import roadStraightUrl from '../assets/img/road_straight.png';
-import roadTUrl from '../assets/img/road_t.png';
 import tileFixedUrl from '../assets/img/tile_fixed.png';
 import tileUrl from '../assets/img/tile.png';
 
-type Rotation = 0 | 90 | 180 | 270;
-type PieceKind = 'end' | 'straight' | 'corner' | 't' | 'cross';
-type RoadPiece = { src: string; rot: Rotation; kind: PieceKind };
+/** タイルの内部座標系は 100x100。中心は (50,50)。 */
+const EDGE: Record<Dir, [number, number]> = {
+  0: [50, 0],
+  1: [100, 50],
+  2: [50, 100],
+  3: [0, 50],
+};
 
 /**
- * 開いている方角の組合せから、通路パーツ画像 1 枚と回転角を決める。
- * 各素材は「上方向が開いている」基準（road_corner・road_t は「上+右」基準）で
- * 描かれているので、実際の方角に合わせて 90 度単位で回す。
+ * 通路を SVG で描く。太い縁取り色のレイヤーを先に描き、その上に一回り細い
+ * 道の色のレイヤーを重ねることで「縁取り付きの道」に見せる。中心にハブの円を
+ * 置くことで、何本の道が集まっても継ぎ目が出ない。
  */
-function roadPiece(conn: number): RoadPiece | null {
+function roadSvg(conn: number): string {
   const open = ALL_DIRS.filter((d) => isOpen(conn, d));
-  if (open.length === 0) return null;
+  if (open.length === 0) return '';
 
-  if (open.length === 1) {
-    const d = open[0]!;
-    return { src: roadEndUrl, rot: ((d * 90) % 360) as Rotation, kind: 'end' };
-  }
+  const lines = open.map((d) => `<line x1="50" y1="50" x2="${EDGE[d][0]}" y2="${EDGE[d][1]}" />`).join('');
 
-  if (open.length === 2) {
-    const [a, b] = open as [Dir, Dir];
-    if (opposite(a) === b) {
-      // 直線: N-S 基準なので E-W なら 90 度回す
-      return { src: roadStraightUrl, rot: a === 0 || a === 2 ? 0 : 90, kind: 'straight' };
-    }
-    // カーブ: 隣り合う 2 方向。「小さい方の方角→時計回り隣」を基準(0度)とする
-    const d = b === ((a + 1) % 4) ? a : b;
-    return { src: roadCornerUrl, rot: ((d * 90) % 360) as Rotation, kind: 'corner' };
-  }
-
-  if (open.length === 3) {
-    const missing = ALL_DIRS.find((d) => !isOpen(conn, d))!;
-    // T字: 「左(W)が塞がっている」基準なので、塞がっている方角を W に合わせて回す
-    return { src: roadTUrl, rot: (((missing + 1) % 4) * 90) as Rotation, kind: 't' };
-  }
-
-  return { src: roadCrossUrl, rot: 0, kind: 'cross' };
+  return (
+    `<g class="tile-road-outline">${lines}<circle cx="50" cy="50" r="15" /></g>` +
+    `<g class="tile-road-fill">${lines}<circle cx="50" cy="50" r="12" /></g>`
+  );
 }
 
 /**
- * 1 タイル分の見た目。背景・通路・ゴール・魚をすべて画像レイヤーとして重ねる。
+ * 1 タイル分の見た目。木目タイルの画像の上に、道を SVG で重ね、
+ * さらにゴールの家／さかなの画像を重ねる。
  * 到達可能／移動可能／ヒントの強調表示は CSS 側（.tile.reachable 等）が担当する。
  */
 export function tileSvg(tile: Tile): string {
@@ -66,12 +49,9 @@ export function tileSvg(tile: Tile): string {
 
   const parts: string[] = [`<img class="tile-bg-img" src="${bgUrl}" alt="" />`];
 
-  const road = roadPiece(tile.conn);
+  const road = roadSvg(tile.conn);
   if (road) {
-    const cls = ['tile-road-img', `piece-${road.kind}`, road.rot !== 0 ? `rot-${road.rot}` : '']
-      .filter(Boolean)
-      .join(' ');
-    parts.push(`<img class="${cls}" src="${road.src}" alt="" />`);
+    parts.push(`<svg class="tile-road-svg" viewBox="0 0 100 100" aria-hidden="true">${road}</svg>`);
   }
 
   if (tile.kind === 'goal') {

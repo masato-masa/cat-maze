@@ -84,7 +84,7 @@
 }
 
 .grid-cell.reachable::after {
-  background: color-mix(in srgb, var(--reach) 45%, transparent);
+  background: color-mix(in srgb, var(--reach) 62%, transparent);
 }
 
 .tile {
@@ -107,8 +107,17 @@
   background: var(--tile);
 }
 
-.tile-bg-img,
-.tile-road-img {
+.tile-bg-img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.tile-road-svg {
   position: absolute;
   inset: 0;
   display: block;
@@ -117,28 +126,29 @@
   pointer-events: none;
 }
 
-.tile-bg-img {
-  object-fit: cover;
+/* 道は形（直線／カーブ／T字／十字）にかかわらず、常にこの1つの太さ・
+   縁取り色で描く。個別に画像化すると微妙な太さのブレが出てしまうため、
+   ここだけはコードで統一している。 */
+.tile-road-outline line,
+.tile-road-outline circle {
+  stroke: var(--road-outline);
+  fill: var(--road-outline);
 }
 
-.tile-road-img {
-  object-fit: contain;
-  /* 各素材はアルファ境界を実測し、開いている方向の軸がタイル中心を正確に
-     通って縁ぴったりに届くよう画像自体を補正済み（道幅も直線パーツに
-     揃えてある）。回転は --road-rot だけで足りる。 */
-  transform: rotate(var(--road-rot, 0deg));
+.tile-road-outline line {
+  stroke-width: 30;
+  stroke-linecap: round;
 }
 
-.tile-road-img.rot-90 {
-  --road-rot: 90deg;
+.tile-road-fill line,
+.tile-road-fill circle {
+  stroke: var(--road);
+  fill: var(--road);
 }
 
-.tile-road-img.rot-180 {
-  --road-rot: 180deg;
-}
-
-.tile-road-img.rot-270 {
-  --road-rot: 270deg;
+.tile-road-fill line {
+  stroke-width: 24;
+  stroke-linecap: round;
 }
 
 .tile-mark {
@@ -152,6 +162,13 @@
   pointer-events: none;
 }
 
+.tile-mark.tile-goal {
+  top: 17%;
+  left: 17%;
+  width: 66%;
+  height: 66%;
+}
+
 .tile-mark.tile-fish {
   top: 32%;
   left: 32%;
@@ -159,25 +176,31 @@
   height: 36%;
 }
 
-/* 到達可能／移動可能／ヒントの強調は、画像の上に重ねた枠・色で示す */
+/* 到達可能／移動可能／ヒントの強調は、画像の上に重ねた枠・色で示す。
+   複数の状態が同時に成立しても互いを消さないよう、それぞれ別のカスタム
+   プロパティ（塗り用・枠用）に書き込んでから 1 か所でまとめて適用する。 */
 .tile-visual::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 12px;
   pointer-events: none;
+  background: var(--tile-tint, transparent);
+  box-shadow: var(--tile-ring, none);
+  transition: background var(--anim) ease-out;
 }
 
 .tile.reachable .tile-visual::after {
-  background: color-mix(in srgb, var(--reach) 40%, transparent);
+  --tile-tint: color-mix(in srgb, var(--reach) 62%, transparent);
 }
 
 .tile.slidable .tile-visual::after {
-  box-shadow: inset 0 0 0 3px var(--accent);
+  --tile-ring: inset 0 0 0 4px var(--accent), 0 0 8px 1px
+    color-mix(in srgb, var(--accent) 75%, transparent);
 }
 
 .tile.hinted .tile-visual::after {
-  box-shadow: inset 0 0 0 4px var(--goal);
+  --tile-ring: inset 0 0 0 5px var(--goal);
   animation: hint-pulse 900ms ease-in-out infinite;
 }
 

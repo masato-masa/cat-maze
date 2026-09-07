@@ -14,8 +14,8 @@
   --accent-ink: #ffffff;
   --accent-soft: #f7d9b6;
 
-  --road: #b98f5f;
-  --road-hub: #a97e50;
+  --road: #d68d4c;
+  --road-outline: #47230f;
   --tile: #fff6e8;
   --tile-fixed: #d9c6ab;
   --stud: #a8927a;
@@ -50,8 +50,8 @@
     --accent-ink: #241c14;
     --accent-soft: #57412a;
 
-    --road: #c99b64;
-    --road-hub: #b98b56;
+    --road: #dc9c5c;
+    --road-outline: #2c1509;
     --tile: #453729;
     --tile-fixed: #574733;
     --stud: #8a7358;
