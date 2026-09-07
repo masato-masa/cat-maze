@@ -176,41 +176,11 @@
   height: 36%;
 }
 
-/* ねこが歩いて行けるマスは、道の真ん中にキラキラ画像を光らせて示す
-   （タイル全体を暗く塗る方式だと分かりにくいという指摘を受けて変更）。
-   ふだんは透明にしておき、.reachable が付いたときだけふわっと現れて明滅する。
-   ゴールタイルだけはキラキラを置かず、家の背景ごと光らせる（.tile-goal-glow）。 */
-.tile-spark {
-  position: absolute;
-  top: 34%;
-  left: 34%;
-  width: 32%;
-  height: 32%;
-  display: block;
-  object-fit: contain;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--anim) ease-out;
-}
-
-.tile.reachable .tile-spark {
-  opacity: 1;
-  animation: spark-twinkle 1500ms ease-in-out infinite;
-}
-
-@keyframes spark-twinkle {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(0.72);
-    opacity: 0.55;
-  }
-}
-
-.tile-goal-glow {
+/* ねこが歩いて行けるマスは、タイル種別を問わず同じ光エフェクトで示す
+   （タイル全体を暗く塗る方式だと分かりにくい、キラキラ画像とゴールの光り方が
+   バラバラで統一感がない、という指摘を受けてこの形にまとめた）。
+   ふだんは透明にしておき、.reachable が付いたときだけふわっと現れて明滅する。 */
+.tile-reach-glow {
   position: absolute;
   inset: 0;
   border-radius: 12px;
@@ -225,12 +195,12 @@
   transition: opacity var(--anim) ease-out;
 }
 
-.tile.reachable .tile-goal-glow {
+.tile.reachable .tile-reach-glow {
   opacity: 1;
-  animation: goal-glow-pulse 1500ms ease-in-out infinite;
+  animation: reach-glow-pulse 1500ms ease-in-out infinite;
 }
 
-@keyframes goal-glow-pulse {
+@keyframes reach-glow-pulse {
   0%,
   100% {
     transform: scale(0.85);

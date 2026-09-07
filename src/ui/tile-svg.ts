@@ -10,7 +10,6 @@ import type { Tile } from '../core/types.ts';
 import catUrl from '../assets/img/cat.png';
 import fishUrl from '../assets/img/fish.png';
 import houseUrl from '../assets/img/house.png';
-import sparkUrl from '../assets/img/spark.png';
 import tileFixedUrl from '../assets/img/tile_fixed.png';
 import tileUrl from '../assets/img/tile.png';
 
@@ -43,9 +42,8 @@ function roadSvg(conn: number): string {
  * 1 タイル分の見た目。木目タイルの画像の上に、道を SVG で重ね、
  * さらにゴールの家／さかなの画像を重ねる。
  * 到達可能／移動可能／ヒントの強調表示は CSS 側（.tile.reachable 等）が担当する。
- * 「ねこが歩いて行ける」表示は、ゴールタイルだけ家の背景を光らせ（tile-goal-glow）、
- * それ以外は道の真ん中にキラキラ画像（tile-spark）を出す。どちらも普段は透明で、
- * CSS 側で .tile.reachable のときだけ現れて明滅する。
+ * 「ねこが歩いて行ける」表示は、タイル種別を問わず同じ光エフェクト（tile-reach-glow）
+ * で統一する。普段は透明で、CSS 側で .tile.reachable のときだけ現れて明滅する。
  */
 export function tileSvg(tile: Tile): string {
   const bgUrl = tile.fixed ? tileFixedUrl : tileUrl;
@@ -58,11 +56,10 @@ export function tileSvg(tile: Tile): string {
     parts.push(`<svg class="tile-road-svg" viewBox="0 0 100 100" aria-hidden="true">${road}</svg>`);
   }
 
+  parts.push('<div class="tile-reach-glow"></div>');
+
   if (tile.kind === 'goal') {
-    parts.push('<div class="tile-goal-glow"></div>');
     parts.push(`<img class="tile-mark tile-goal" src="${houseUrl}" alt="" />`);
-  } else {
-    parts.push(`<img class="tile-spark" src="${sparkUrl}" alt="" />`);
   }
   if (tile.fish) {
     parts.push(`<img class="tile-mark tile-fish" src="${fishUrl}" alt="" />`);
