@@ -123,16 +123,10 @@
 
 .tile-road-img {
   object-fit: contain;
-  /* road_straight・road_end はアルファ境界を実測し、開いている方向の軸が
-     タイル中心を正確に通って縁ぴったりに届くよう画像自体を補正済み。
-     カーブ・T字・十字は道幅を直線パーツと完全に揃えるため、
-     直線パーツの上半分（road-half、中心から端までのクリップ）を
-     開いている方角の数だけ重ねて組み立てる。 */
+  /* 各素材はアルファ境界を実測し、開いている方向の軸がタイル中心を正確に
+     通って縁ぴったりに届くよう画像自体を補正済み（道幅も直線パーツに
+     揃えてある）。回転は --road-rot だけで足りる。 */
   transform: rotate(var(--road-rot, 0deg));
-}
-
-.tile-road-img.road-half {
-  clip-path: inset(0 0 50% 0);
 }
 
 .tile-road-img.rot-90 {
