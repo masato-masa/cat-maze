@@ -16,17 +16,25 @@ describe('tileSvg', () => {
     expect(tileSvg(tile('X'))).not.toContain('tile-road-img');
   });
 
-  it('開いている方角の数に応じた通路パーツを選ぶ', () => {
-    expect(tileSvg(tile('N'))).toContain('piece-end');
-    expect(tileSvg(tile('NS'))).toContain('road_straight');
-    expect(tileSvg(tile('NE'))).toContain('road_corner');
-    expect(tileSvg(tile('NES'))).toContain('road_t');
-    expect(tileSvg(tile('NESW'))).toContain('road_cross');
+  it('開いている方角の数だけレイヤーを重ねる（直線パーツの使い回しで幅を揃える）', () => {
+    expect((tileSvg(tile('N')).match(/tile-road-img/g) ?? []).length).toBe(1);
+    expect((tileSvg(tile('NS')).match(/tile-road-img/g) ?? []).length).toBe(2);
+    expect((tileSvg(tile('NE')).match(/tile-road-img/g) ?? []).length).toBe(2);
+    expect((tileSvg(tile('NES')).match(/tile-road-img/g) ?? []).length).toBe(3);
+    expect((tileSvg(tile('NESW')).match(/tile-road-img/g) ?? []).length).toBe(4);
   });
 
-  it('行き止まりだけ専用クラスが付く', () => {
-    expect(tileSvg(tile('N'))).toContain('piece-end');
-    expect(tileSvg(tile('NS'))).not.toContain('piece-end');
+  it('2方向以上は道幅の基準になる直線パーツ(road_straight)を使い回す', () => {
+    expect((tileSvg(tile('NS')).match(/road_straight/g) ?? []).length).toBe(2);
+    expect((tileSvg(tile('NE')).match(/road_straight/g) ?? []).length).toBe(2);
+    expect((tileSvg(tile('NESW')).match(/road_straight/g) ?? []).length).toBe(4);
+  });
+
+  it('行き止まりだけ専用クラス・専用画像(road_end)が付く', () => {
+    const svg = tileSvg(tile('N'));
+    expect(svg).toContain('road-end');
+    expect(svg).toContain('road_end');
+    expect(tileSvg(tile('NS'))).not.toContain('road-end');
   });
 
   it('固定タイルには専用のクラスと画像が付く', () => {
