@@ -176,39 +176,26 @@
   height: 36%;
 }
 
-/* ねこが歩いて行けるマスは、道の真ん中にキラキラを光らせて示す
+/* ねこが歩いて行けるマスは、道の真ん中にキラキラ画像を光らせて示す
    （タイル全体を暗く塗る方式だと分かりにくいという指摘を受けて変更）。
-   ふだんは透明にしておき、.reachable が付いたときだけふわっと現れて明滅する。 */
+   ふだんは透明にしておき、.reachable が付いたときだけふわっと現れて明滅する。
+   ゴールタイルだけはキラキラを置かず、家の背景ごと光らせる（.tile-goal-glow）。 */
 .tile-spark {
   position: absolute;
-  inset: 0;
+  top: 34%;
+  left: 34%;
+  width: 32%;
+  height: 32%;
   display: block;
-  width: 100%;
-  height: 100%;
+  object-fit: contain;
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--anim) ease-out;
 }
 
-.tile-spark path {
-  fill: var(--star);
-  stroke: var(--road-outline);
-  stroke-width: 1.5;
-  stroke-linejoin: round;
-}
-
 .tile.reachable .tile-spark {
   opacity: 1;
-}
-
-.tile.reachable .tile-spark path {
-  transform-box: fill-box;
-  transform-origin: 50% 50%;
   animation: spark-twinkle 1500ms ease-in-out infinite;
-}
-
-.tile.reachable .tile-spark .spark-small {
-  animation-delay: 220ms;
 }
 
 @keyframes spark-twinkle {
@@ -220,6 +207,36 @@
   50% {
     transform: scale(0.72);
     opacity: 0.55;
+  }
+}
+
+.tile-goal-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--star) 90%, transparent) 0%,
+    color-mix(in srgb, var(--star) 45%, transparent) 45%,
+    transparent 72%
+  );
+  transition: opacity var(--anim) ease-out;
+}
+
+.tile.reachable .tile-goal-glow {
+  opacity: 1;
+  animation: goal-glow-pulse 1500ms ease-in-out infinite;
+}
+
+@keyframes goal-glow-pulse {
+  0%,
+  100% {
+    transform: scale(0.85);
+  }
+  50% {
+    transform: scale(1.15);
   }
 }
 
