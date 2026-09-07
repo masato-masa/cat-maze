@@ -176,22 +176,63 @@
   height: 36%;
 }
 
-/* 到達可能／移動可能／ヒントの強調は、画像の上に重ねた枠・色で示す。
-   複数の状態が同時に成立しても互いを消さないよう、それぞれ別のカスタム
-   プロパティ（塗り用・枠用）に書き込んでから 1 か所でまとめて適用する。 */
+/* ねこが歩いて行けるマスは、道の真ん中にキラキラを光らせて示す
+   （タイル全体を暗く塗る方式だと分かりにくいという指摘を受けて変更）。
+   ふだんは透明にしておき、.reachable が付いたときだけふわっと現れて明滅する。 */
+.tile-spark {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--anim) ease-out;
+}
+
+.tile-spark path {
+  fill: var(--star);
+  stroke: var(--road-outline);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.tile.reachable .tile-spark {
+  opacity: 1;
+}
+
+.tile.reachable .tile-spark path {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: spark-twinkle 1500ms ease-in-out infinite;
+}
+
+.tile.reachable .tile-spark .spark-small {
+  animation-delay: 220ms;
+}
+
+@keyframes spark-twinkle {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.72);
+    opacity: 0.55;
+  }
+}
+
+/* 移動可能（スライドできる）マス・ヒントの強調は、画像の上に重ねた枠で示す。
+   複数の状態が同時に成立しても互いを消さないよう、カスタムプロパティに
+   書き込んでから 1 か所でまとめて適用する。 */
 .tile-visual::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 12px;
   pointer-events: none;
-  background: var(--tile-tint, transparent);
   box-shadow: var(--tile-ring, none);
-  transition: background var(--anim) ease-out;
-}
-
-.tile.reachable .tile-visual::after {
-  --tile-tint: color-mix(in srgb, var(--reach) 62%, transparent);
 }
 
 .tile.slidable .tile-visual::after {

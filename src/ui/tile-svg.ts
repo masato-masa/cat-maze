@@ -39,8 +39,20 @@ function roadSvg(conn: number): string {
 }
 
 /**
+ * 「ねこが歩いて行ける」ことを示すキラキラ。道の真ん中に大小2つの星を置く。
+ * 表示・非表示と明滅アニメーションは CSS 側（.tile.reachable .tile-spark）が担当する。
+ */
+const SPARK_SVG =
+  '<svg class="tile-spark" viewBox="0 0 100 100" aria-hidden="true">' +
+  '<path class="spark-big" ' +
+  'd="M50 12 C54 38 62 46 88 50 C62 54 54 62 50 88 C46 62 38 54 12 50 C38 46 46 38 50 12 Z" />' +
+  '<path class="spark-small" ' +
+  'd="M74 16 C75.5 22 80 26.5 86 28 C80 29.5 75.5 34 74 40 C72.5 34 68 29.5 62 28 C68 26.5 72.5 22 74 16 Z" />' +
+  '</svg>';
+
+/**
  * 1 タイル分の見た目。木目タイルの画像の上に、道を SVG で重ね、
- * さらにゴールの家／さかなの画像を重ねる。
+ * さらにゴールの家／さかなの画像・キラキラを重ねる。
  * 到達可能／移動可能／ヒントの強調表示は CSS 側（.tile.reachable 等）が担当する。
  */
 export function tileSvg(tile: Tile): string {
@@ -53,6 +65,8 @@ export function tileSvg(tile: Tile): string {
   if (road) {
     parts.push(`<svg class="tile-road-svg" viewBox="0 0 100 100" aria-hidden="true">${road}</svg>`);
   }
+
+  parts.push(SPARK_SVG);
 
   if (tile.kind === 'goal') {
     parts.push(`<img class="tile-mark tile-goal" src="${houseUrl}" alt="" />`);
