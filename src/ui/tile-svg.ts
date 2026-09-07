@@ -17,12 +17,15 @@ import tileFixedUrl from '../assets/img/tile_fixed.png';
 import tileUrl from '../assets/img/tile.png';
 
 type Rotation = 0 | 90 | 180 | 270;
-type RoadPiece = { src: string; rot: Rotation; end: boolean };
+type PieceKind = 'end' | 'straight' | 'corner' | 't' | 'cross';
+type RoadPiece = { src: string; rot: Rotation; kind: PieceKind };
 
 /**
  * 開いている方角の組合せから、通路パーツ画像 1 枚と回転角を決める。
  * 各素材は「上方向が開いている」基準（road_corner・road_t は「上+右」基準）で
  * 描かれているので、実際の方角に合わせて 90 度単位で回す。
+ * 画像素材そのものは中心ぴったりで縁に届いているとは限らないので、
+ * 種類ごとの拡大率・クリップは CSS 側（.tile-road-img.piece-*）で補正する。
  */
 function roadPiece(conn: number): RoadPiece | null {
   const open = ALL_DIRS.filter((d) => isOpen(conn, d));
@@ -30,27 +33,27 @@ function roadPiece(conn: number): RoadPiece | null {
 
   if (open.length === 1) {
     const d = open[0]!;
-    return { src: roadEndUrl, rot: ((d * 90) % 360) as Rotation, end: true };
+    return { src: roadEndUrl, rot: ((d * 90) % 360) as Rotation, kind: 'end' };
   }
 
   if (open.length === 2) {
     const [a, b] = open as [Dir, Dir];
     if (opposite(a) === b) {
       // 直線: N-S 基準なので E-W なら 90 度回す
-      return { src: roadStraightUrl, rot: a === 0 || a === 2 ? 0 : 90, end: false };
+      return { src: roadStraightUrl, rot: a === 0 || a === 2 ? 0 : 90, kind: 'straight' };
     }
     // カーブ: 隣り合う 2 方向。「小さい方の方角→時計回り隣」を基準(0度)とする
     const d = b === ((a + 1) % 4) ? a : b;
-    return { src: roadCornerUrl, rot: ((d * 90) % 360) as Rotation, end: false };
+    return { src: roadCornerUrl, rot: ((d * 90) % 360) as Rotation, kind: 'corner' };
   }
 
   if (open.length === 3) {
     const missing = ALL_DIRS.find((d) => !isOpen(conn, d))!;
     // T字: 「左(W)が塞がっている」基準なので、塞がっている方角を W に合わせて回す
-    return { src: roadTUrl, rot: (((missing + 1) % 4) * 90) as Rotation, end: false };
+    return { src: roadTUrl, rot: (((missing + 1) % 4) * 90) as Rotation, kind: 't' };
   }
 
-  return { src: roadCrossUrl, rot: 0, end: false };
+  return { src: roadCrossUrl, rot: 0, kind: 'cross' };
 }
 
 /**
@@ -65,11 +68,7 @@ export function tileSvg(tile: Tile): string {
 
   const road = roadPiece(tile.conn);
   if (road) {
-    const cls = [
-      'tile-road-img',
-      road.rot !== 0 ? `rot-${road.rot}` : '',
-      road.end ? 'tile-road-end' : '',
-    ]
+    const cls = ['tile-road-img', `piece-${road.kind}`, road.rot !== 0 ? `rot-${road.rot}` : '']
       .filter(Boolean)
       .join(' ');
     parts.push(`<img class="${cls}" src="${road.src}" alt="" />`);

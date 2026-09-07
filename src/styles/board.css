@@ -123,36 +123,62 @@
 
 .tile-road-img {
   object-fit: contain;
+  /* 生成した素材は縁ぴったりに描かれていないので、種類ごとに拡大して
+     タイルの端まで届かせる（--road-scale）。角度は回転クラスが --road-rot に入れる。 */
+  transform: rotate(var(--road-rot, 0deg)) scale(var(--road-scale, 1));
 }
 
 .tile-road-img.rot-90 {
-  transform: rotate(90deg);
+  --road-rot: 90deg;
 }
 
 .tile-road-img.rot-180 {
-  transform: rotate(180deg);
+  --road-rot: 180deg;
 }
 
 .tile-road-img.rot-270 {
-  transform: rotate(270deg);
+  --road-rot: 270deg;
+}
+
+/* road_end.png は中心から片側だけでなく上下に貫通した棒として描かれてしまったので、
+   下半分をクリップしてから拡大し、行き止まりが逆側にも伸びて見えるのを防ぐ。 */
+.tile-road-img.piece-end {
+  clip-path: inset(0 0 50% 0);
+  --road-scale: 1.28;
+}
+
+.tile-road-img.piece-straight {
+  --road-scale: 1.02;
+}
+
+.tile-road-img.piece-corner {
+  --road-scale: 1.22;
+}
+
+.tile-road-img.piece-t {
+  --road-scale: 1.32;
+}
+
+.tile-road-img.piece-cross {
+  --road-scale: 1.11;
 }
 
 .tile-mark {
   position: absolute;
-  top: 22%;
-  left: 22%;
-  width: 56%;
-  height: 56%;
+  top: 30%;
+  left: 30%;
+  width: 40%;
+  height: 40%;
   display: block;
   object-fit: contain;
   pointer-events: none;
 }
 
 .tile-mark.tile-fish {
-  top: 27%;
-  left: 27%;
-  width: 46%;
-  height: 46%;
+  top: 32%;
+  left: 32%;
+  width: 36%;
+  height: 36%;
 }
 
 /* 到達可能／移動可能／ヒントの強調は、画像の上に重ねた枠・色で示す */
@@ -184,9 +210,12 @@
 }
 
 .cat-img {
+  position: absolute;
+  top: 18%;
+  left: 18%;
+  width: 64%;
+  height: 64%;
   display: block;
-  width: 100%;
-  height: 100%;
   object-fit: contain;
 }
 

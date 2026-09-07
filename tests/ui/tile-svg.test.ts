@@ -17,7 +17,7 @@ describe('tileSvg', () => {
   });
 
   it('開いている方角の数に応じた通路パーツを選ぶ', () => {
-    expect(tileSvg(tile('N'))).toContain('tile-road-end');
+    expect(tileSvg(tile('N'))).toContain('piece-end');
     expect(tileSvg(tile('NS'))).toContain('road_straight');
     expect(tileSvg(tile('NE'))).toContain('road_corner');
     expect(tileSvg(tile('NES'))).toContain('road_t');
@@ -25,8 +25,8 @@ describe('tileSvg', () => {
   });
 
   it('行き止まりだけ専用クラスが付く', () => {
-    expect(tileSvg(tile('N'))).toContain('tile-road-end');
-    expect(tileSvg(tile('NS'))).not.toContain('tile-road-end');
+    expect(tileSvg(tile('N'))).toContain('piece-end');
+    expect(tileSvg(tile('NS'))).not.toContain('piece-end');
   });
 
   it('固定タイルには専用のクラスと画像が付く', () => {
