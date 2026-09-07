@@ -5,8 +5,9 @@
 // Copyright (c) 2014 Gabriele Cirulli — MIT License
 // https://github.com/gabrielecirulli/2048
 import type { Dir } from '../core/conn.ts';
+import type { Pos } from '../core/types.ts';
 
-export type InputEvent = 'walk' | 'undo' | 'restart' | 'back' | 'hint';
+export type InputEvent = 'walk' | 'slide' | 'undo' | 'restart' | 'back' | 'hint';
 
 const KEY_DIR: Record<string, Dir> = {
   ArrowUp: 0,
@@ -36,11 +37,12 @@ const KEY_ACTION: Record<string, InputEvent> = {
 const SWIPE_THRESHOLD = 10;
 
 export class InputManager {
-  private listeners = new Map<InputEvent, ((d?: Dir) => void)[]>();
+  private listeners = new Map<InputEvent, ((d?: Dir | Pos) => void)[]>();
   private target: EventTarget;
   private swipeEl: HTMLElement | null = null;
   private startX = 0;
   private startY = 0;
+  private startPos: Pos | null = null;
   /**
    * スワイプのあとにブラウザが click を出すことがある。
    * そのまま通すと「歩く」と「スライド」が二重に起きてしまうので、
@@ -54,13 +56,13 @@ export class InputManager {
     target.addEventListener('keydown', this.onKeyDown as EventListener);
   }
 
-  on(event: InputEvent, cb: (d?: Dir) => void): void {
+  on(event: InputEvent, cb: (d?: Dir | Pos) => void): void {
     const list = this.listeners.get(event) ?? [];
     list.push(cb);
     this.listeners.set(event, list);
   }
 
-  private emit(event: InputEvent, d?: Dir): void {
+  private emit(event: InputEvent, d?: Dir | Pos): void {
     for (const cb of this.listeners.get(event) ?? []) cb(d);
   }
 
@@ -103,19 +105,23 @@ export class InputManager {
     if (!t) return;
     this.startX = t.clientX;
     this.startY = t.clientY;
+    const el = (t.target as HTMLElement | null)?.closest<HTMLElement>('[data-r]') ?? null;
+    this.startPos = el ? { r: Number(el.dataset['r']), c: Number(el.dataset['c']) } : null;
   };
 
+  /**
+   * スワイプはタイルを押す操作として扱う。押す向きは穴の位置から一意に決まるので、
+   * スワイプ自体の向きは見ず、指を下ろしたマス（=押したいタイル）だけを渡す。
+   */
   private onTouchEnd = (ev: TouchEvent): void => {
     if (ev.touches.length > 0) return;
     const t = ev.changedTouches[0];
     if (!t) return;
     const dx = t.clientX - this.startX;
     const dy = t.clientY - this.startY;
-    const adx = Math.abs(dx);
-    const ady = Math.abs(dy);
-    if (Math.max(adx, ady) <= SWIPE_THRESHOLD) return; // タップはクリック側で処理する
+    if (Math.max(Math.abs(dx), Math.abs(dy)) <= SWIPE_THRESHOLD) return; // タップはクリック側で処理する
     this.swallowNextClick = true;
-    this.emit('walk', adx > ady ? (dx > 0 ? 1 : 3) : dy > 0 ? 2 : 0);
+    if (this.startPos) this.emit('slide', this.startPos);
   };
 
   destroy(): void {

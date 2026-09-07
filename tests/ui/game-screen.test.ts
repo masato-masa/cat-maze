@@ -30,6 +30,21 @@ const key = (k: string): void => {
 const tile = (r: number, c: number): HTMLElement =>
   root.querySelector<HTMLElement>(`.tile-layer [data-r="${r}"][data-c="${c}"]`)!;
 
+/** jsdom には TouchEvent が無いので、必要なプロパティだけ持つイベントを作る。 */
+function touchEvent(type: string, points: { x: number; y: number; target?: EventTarget }[]): Event {
+  const ev = new Event(type, { bubbles: true, cancelable: true });
+  const list = points.map((p) => ({ clientX: p.x, clientY: p.y, target: p.target ?? null }));
+  Object.defineProperty(ev, 'touches', { value: type === 'touchstart' ? list : [] });
+  Object.defineProperty(ev, 'changedTouches', { value: list });
+  return ev;
+}
+
+/** el の上でスワイプする（=そのマスのタイルを押す）。 */
+function swipe(el: HTMLElement): void {
+  el.dispatchEvent(touchEvent('touchstart', [{ x: 100, y: 100, target: el }]));
+  el.dispatchEvent(touchEvent('touchend', [{ x: 160, y: 104 }]));
+}
+
 describe('対局画面', () => {
   it('知らないステージ ID には案内を出す', () => {
     open('nope');
@@ -44,10 +59,10 @@ describe('対局画面', () => {
     cleanup();
   });
 
-  // W1-1 は猫のタイル (1,0) を押すと猫ごと運ばれ、そのあと東へ 2 歩でゴール。
+  // W1-1 は猫のタイル (1,0) をスワイプで押すと猫ごと運ばれ、そのあと東へ 2 歩でゴール。
   it('スライドで手数が増え、歩行では増えない', () => {
     open('W1-1');
-    tile(1, 0).click();
+    swipe(tile(1, 0));
     expect(q('.moves').textContent).toBe('1');
     key('ArrowRight');
     expect(q('.moves').textContent).toBe('1');
@@ -56,7 +71,7 @@ describe('対局画面', () => {
 
   it('クリアすると星と成績が出て、進捗が保存される', () => {
     open('W1-1');
-    tile(1, 0).click();
+    swipe(tile(1, 0));
     key('ArrowRight');
     key('ArrowRight');
     expect(q('.game-message').hidden).toBe(false);
@@ -68,7 +83,7 @@ describe('対局画面', () => {
 
   it('Undo でスライド前に戻る', () => {
     open('W1-1');
-    tile(1, 0).click();
+    swipe(tile(1, 0));
     expect(q<HTMLButtonElement>('.undo-btn').disabled).toBe(false);
     q('.undo-btn').click();
     expect(q('.moves').textContent).toBe('0');
@@ -78,7 +93,7 @@ describe('対局画面', () => {
 
   it('やりなおしで最初から始められる', () => {
     open('W1-1');
-    tile(1, 0).click();
+    swipe(tile(1, 0));
     key('ArrowRight');
     key('ArrowRight');
     q('.retry-btn').click();
@@ -107,8 +122,6 @@ describe('対局画面', () => {
     cleanup();
   });
 
-  // 最適解の 32% は「猫が乗っている / 歩いて行けるタイルを押す」手なので、
-  // タップは常にスライドを優先する。歩行の手段があることを画面に明示しておく。
   it('タップとスワイプの役割を画面に出す', () => {
     open('W1-1');
     const line = q('.controls-line').textContent!;
@@ -118,11 +131,20 @@ describe('対局画面', () => {
     cleanup();
   });
 
-  it('スライドできるマスをタップしたらスライドする（歩行より優先）', () => {
+  it('スライドできるマスをタップしても歩行になる（タップは常に歩行）', () => {
     open('W3-1');
-    // (3,4) は歩いて行けるが押すこともできる。タップではスライドが起きる。
+    // (3,4) は歩いて行けるし押すこともできるマス。タップでは歩行が起きる。
     const before = q('.moves').textContent;
     tile(3, 4).click();
+    expect(before).toBe('0');
+    expect(q('.moves').textContent).toBe('0');
+    cleanup();
+  });
+
+  it('スライドできるマスをスワイプしたらスライドする', () => {
+    open('W3-1');
+    const before = q('.moves').textContent;
+    swipe(tile(3, 4));
     expect(before).toBe('0');
     expect(q('.moves').textContent).toBe('1');
     cleanup();

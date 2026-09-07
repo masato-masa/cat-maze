@@ -52,8 +52,8 @@ export function renderGameScreen(
       <div class="fish-line" hidden><span class="fish-count"></span></div>
 
       <p class="controls-line">
-        <span class="ctl"><b>タップ</b> タイルを うごかす</span>
-        <span class="ctl"><b>スワイプ / やじるし</b> ねこが あるく</span>
+        <span class="ctl"><b>タップ / やじるし</b> ねこが あるく</span>
+        <span class="ctl"><b>スワイプ</b> タイルを うごかす</span>
       </p>
 
       <footer class="game-footer">
@@ -137,15 +137,18 @@ export function renderGameScreen(
   view.onCellClick((p) => {
     if (!message.hidden) return;
     const s = session.current;
-    // 入力の曖昧さは仕様書 §4.3 の順で解く:
-    // 押せるタイルならスライド、そうでなく到達領域内なら歩行、それ以外は無視。
-    if (canSlide(s.board, p)) act(() => session.slide(p));
-    else if (reachableSet(s).has(idx(s.board, p.r, p.c))) act(() => session.walkTo(p));
+    // タップは常に歩行。到達領域外なら何もしない。
+    if (reachableSet(s).has(idx(s.board, p.r, p.c))) act(() => session.walkTo(p));
   });
 
   input.on('walk', (d) => {
     if (!message.hidden || d === undefined) return;
     act(() => session.walk(d as Dir));
+  });
+  input.on('slide', (p) => {
+    if (!message.hidden || p === undefined) return;
+    const target = p as Pos;
+    if (canSlide(session.current.board, target)) act(() => session.slide(target));
   });
   input.on('undo', () => {
     if (!message.hidden) return;
