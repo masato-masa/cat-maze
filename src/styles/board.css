@@ -62,22 +62,29 @@
 .grid-cell {
   border-radius: 12px;
   background: transparent;
+  overflow: hidden;
   transition: background var(--anim) ease-out;
 }
 
 .grid-cell.hole {
-  background: var(--hole);
+  background-color: var(--hole);
+  background-image: url('../assets/img/hole.png');
+  background-size: cover;
+  background-position: center;
   box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.28);
 }
 
-.grid-cell.reachable {
-  background: var(--reach);
+.grid-cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transition: background var(--anim) ease-out;
+  pointer-events: none;
 }
 
-/* 到達領域はタイルの背景そのものを変えて示す。
-   背景セルはタイルに隠れて見えないため。 */
-.tile.reachable .tile-bg {
-  fill: var(--reach);
+.grid-cell.reachable::after {
+  background: color-mix(in srgb, var(--reach) 45%, transparent);
 }
 
 .tile {
@@ -90,96 +97,101 @@
   cursor: pointer;
 }
 
-.tile.slidable .tile-bg {
-  stroke: var(--accent);
-  stroke-width: 3;
-  stroke-dasharray: 7 5;
+.tile-visual {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--tile);
 }
 
-.tile.hinted .tile-bg {
-  stroke: var(--goal);
-  stroke-width: 5;
-  stroke-dasharray: none;
+.tile-bg-img,
+.tile-road-img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tile-bg-img {
+  object-fit: cover;
+}
+
+.tile-road-img {
+  object-fit: contain;
+}
+
+.tile-road-img.rot-90 {
+  transform: rotate(90deg);
+}
+
+.tile-road-img.rot-180 {
+  transform: rotate(180deg);
+}
+
+.tile-road-img.rot-270 {
+  transform: rotate(270deg);
+}
+
+.tile-mark {
+  position: absolute;
+  top: 22%;
+  left: 22%;
+  width: 56%;
+  height: 56%;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.tile-mark.tile-fish {
+  top: 27%;
+  left: 27%;
+  width: 46%;
+  height: 46%;
+}
+
+/* 到達可能／移動可能／ヒントの強調は、画像の上に重ねた枠・色で示す */
+.tile-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.tile.reachable .tile-visual::after {
+  background: color-mix(in srgb, var(--reach) 40%, transparent);
+}
+
+.tile.slidable .tile-visual::after {
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+.tile.hinted .tile-visual::after {
+  box-shadow: inset 0 0 0 4px var(--goal);
   animation: hint-pulse 900ms ease-in-out infinite;
 }
 
 @keyframes hint-pulse {
   50% {
-    stroke-opacity: 0.35;
+    opacity: 0.35;
   }
 }
 
-.tile-svg,
-.cat-svg {
+.cat-img {
   display: block;
   width: 100%;
   height: 100%;
-}
-
-.tile-bg {
-  fill: var(--tile);
-  stroke: none;
-}
-
-.tile-bg.tile-fixed {
-  fill: var(--tile-fixed);
-}
-
-.tile-stud {
-  fill: var(--stud);
-}
-
-.tile-road {
-  stroke: var(--road);
-  stroke-width: 22;
-  stroke-linecap: round;
-}
-
-.tile-road-hub {
-  fill: var(--road-hub);
-}
-
-.tile-cap {
-  fill: var(--road-hub);
-}
-
-.tile-goal path {
-  fill: var(--goal);
-}
-
-.tile-goal .tile-goal-door {
-  fill: var(--tile);
-}
-
-.tile-fish path {
-  fill: var(--fish);
-}
-
-.tile-fish .tile-fish-eye {
-  fill: var(--tile);
+  object-fit: contain;
 }
 
 .cat {
   transition: transform var(--anim-cat) ease-out;
-}
-
-.cat-body path,
-.cat-body circle {
-  fill: var(--cat);
-}
-
-.cat-eye {
-  fill: var(--cat-ink);
-}
-
-.cat-nose {
-  fill: var(--cat-ink);
-}
-
-.cat-whisker line {
-  stroke: var(--cat);
-  stroke-width: 2.5;
-  stroke-linecap: round;
 }
 
 .cat.cleared {

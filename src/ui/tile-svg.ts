@@ -1,106 +1,91 @@
-// タイル中心から開いている辺へ線を引き、行き止まりの先端に印を置く描き方は
-// Simon Tatham's Portable Puzzle Collection の net.c (MIT) に倣っている。
-// https://github.com/ghewgill/puzzles
-import { ALL_DIRS, isOpen } from '../core/conn.ts';
+// 盤面の絵はすべて ChatGPT で生成したイラスト素材（src/assets/img）を貼り合わせて作る。
+// タイルの開いている方角（1〜4 方向）に応じて、通路パーツを 1 枚選び回転させるだけで
+// 組合せ爆発（16通り）を避けている。回転は CSS クラスで行い、色は一切直書きしない。
+import { ALL_DIRS, isOpen, opposite } from '../core/conn.ts';
 import type { Dir } from '../core/conn.ts';
 import type { Tile } from '../core/types.ts';
 
-/** タイルの内部座標系は 100x100。中心は (50,50)。 */
-const EDGE: Record<Dir, [number, number]> = {
-  0: [50, 0],
-  1: [100, 50],
-  2: [50, 100],
-  3: [0, 50],
-};
+import catUrl from '../assets/img/cat.png';
+import fishUrl from '../assets/img/fish.png';
+import houseUrl from '../assets/img/house.png';
+import roadCornerUrl from '../assets/img/road_corner.png';
+import roadCrossUrl from '../assets/img/road_cross.png';
+import roadEndUrl from '../assets/img/road_end.png';
+import roadStraightUrl from '../assets/img/road_straight.png';
+import roadTUrl from '../assets/img/road_t.png';
+import tileFixedUrl from '../assets/img/tile_fixed.png';
+import tileUrl from '../assets/img/tile.png';
 
-function countOpen(conn: number): number {
-  let n = 0;
-  for (const d of ALL_DIRS) if (isOpen(conn, d)) n++;
-  return n;
-}
+type Rotation = 0 | 90 | 180 | 270;
+type RoadPiece = { src: string; rot: Rotation; end: boolean };
 
-/** ねこの家（ゴール）。 */
-function goalMark(): string {
-  return (
-    '<g class="tile-goal">' +
-    '<path d="M50 26 L78 48 L78 76 L22 76 L22 48 Z" />' +
-    '<path class="tile-goal-door" d="M42 76 L42 58 A8 8 0 0 1 58 58 L58 76 Z" />' +
-    '</g>'
-  );
-}
+/**
+ * 開いている方角の組合せから、通路パーツ画像 1 枚と回転角を決める。
+ * 各素材は「上方向が開いている」基準（road_corner・road_t は「上+右」基準）で
+ * 描かれているので、実際の方角に合わせて 90 度単位で回す。
+ */
+function roadPiece(conn: number): RoadPiece | null {
+  const open = ALL_DIRS.filter((d) => isOpen(conn, d));
+  if (open.length === 0) return null;
 
-/** さかな。 */
-function fishMark(): string {
-  return (
-    '<g class="tile-fish">' +
-    '<path d="M36 50 C44 38, 62 38, 70 50 C62 62, 44 62, 36 50 Z" />' +
-    '<path d="M70 50 L82 41 L82 59 Z" />' +
-    '<circle cx="46" cy="47" r="2.6" class="tile-fish-eye" />' +
-    '</g>'
-  );
+  if (open.length === 1) {
+    const d = open[0]!;
+    return { src: roadEndUrl, rot: ((d * 90) % 360) as Rotation, end: true };
+  }
+
+  if (open.length === 2) {
+    const [a, b] = open as [Dir, Dir];
+    if (opposite(a) === b) {
+      // 直線: N-S 基準なので E-W なら 90 度回す
+      return { src: roadStraightUrl, rot: a === 0 || a === 2 ? 0 : 90, end: false };
+    }
+    // カーブ: 隣り合う 2 方向。「小さい方の方角→時計回り隣」を基準(0度)とする
+    const d = b === ((a + 1) % 4) ? a : b;
+    return { src: roadCornerUrl, rot: ((d * 90) % 360) as Rotation, end: false };
+  }
+
+  if (open.length === 3) {
+    const missing = ALL_DIRS.find((d) => !isOpen(conn, d))!;
+    // T字: 「左(W)が塞がっている」基準なので、塞がっている方角を W に合わせて回す
+    return { src: roadTUrl, rot: (((missing + 1) % 4) * 90) as Rotation, end: false };
+  }
+
+  return { src: roadCrossUrl, rot: 0, end: false };
 }
 
 /**
- * 1 タイル分の SVG。色はすべて CSS 変数を通すので、テーマは CSS 側で切り替えられる。
+ * 1 タイル分の見た目。背景・通路・ゴール・魚をすべて画像レイヤーとして重ねる。
+ * 到達可能／移動可能／ヒントの強調表示は CSS 側（.tile.reachable 等）が担当する。
  */
 export function tileSvg(tile: Tile): string {
-  const parts: string[] = [];
+  const bgUrl = tile.fixed ? tileFixedUrl : tileUrl;
+  const wrapClass = ['tile-visual', tile.fixed ? 'tile-fixed' : ''].filter(Boolean).join(' ');
 
-  const bgClass = ['tile-bg', tile.fixed ? 'tile-fixed' : ''].filter(Boolean).join(' ');
-  parts.push(`<rect class="${bgClass}" x="2" y="2" width="96" height="96" rx="12" />`);
+  const parts: string[] = [`<img class="tile-bg-img" src="${bgUrl}" alt="" />`];
 
-  if (tile.fixed) {
-    // 動かないことが一目で分かるよう、四隅に鋲を打つ
-    for (const [x, y] of [
-      [14, 14],
-      [86, 14],
-      [14, 86],
-      [86, 86],
-    ]) {
-      parts.push(`<circle class="tile-stud" cx="${x}" cy="${y}" r="3.5" />`);
-    }
+  const road = roadPiece(tile.conn);
+  if (road) {
+    const cls = [
+      'tile-road-img',
+      road.rot !== 0 ? `rot-${road.rot}` : '',
+      road.end ? 'tile-road-end' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    parts.push(`<img class="${cls}" src="${road.src}" alt="" />`);
   }
 
-  const open = countOpen(tile.conn);
-  for (const d of ALL_DIRS) {
-    if (!isOpen(tile.conn, d)) continue;
-    const [x, y] = EDGE[d];
-    parts.push(`<line class="tile-road" x1="50" y1="50" x2="${x}" y2="${y}" />`);
+  if (tile.kind === 'goal') {
+    parts.push(`<img class="tile-mark tile-goal" src="${houseUrl}" alt="" />`);
   }
-  if (open > 0) parts.push('<circle class="tile-road-hub" cx="50" cy="50" r="11" />');
-  if (open === 1) {
-    // 行き止まりは先端を丸くして「ここで終わり」を示す
-    for (const d of ALL_DIRS) {
-      if (!isOpen(tile.conn, d)) continue;
-      const [x, y] = EDGE[d];
-      parts.push(`<circle class="tile-cap" cx="${(50 + x) / 2}" cy="${(50 + y) / 2}" r="9" />`);
-    }
+  if (tile.fish) {
+    parts.push(`<img class="tile-mark tile-fish" src="${fishUrl}" alt="" />`);
   }
 
-  if (tile.kind === 'goal') parts.push(goalMark());
-  if (tile.fish) parts.push(fishMark());
-
-  return `<svg class="tile-svg" viewBox="0 0 100 100" aria-hidden="true">${parts.join('')}</svg>`;
+  return `<div class="${wrapClass}">${parts.join('')}</div>`;
 }
 
 /** ねこ。盤面とは別のレイヤに置く。 */
 export function catSvg(): string {
-  return (
-    '<svg class="cat-svg" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<g class="cat-body">' +
-    '<path d="M28 34 L30 16 L46 27 Z" />' +
-    '<path d="M72 34 L70 16 L54 27 Z" />' +
-    '<circle cx="50" cy="52" r="26" />' +
-    '</g>' +
-    '<circle class="cat-eye" cx="41" cy="48" r="3.6" />' +
-    '<circle class="cat-eye" cx="59" cy="48" r="3.6" />' +
-    '<path class="cat-nose" d="M46 59 L54 59 L50 64 Z" />' +
-    '<g class="cat-whisker">' +
-    '<line x1="24" y1="56" x2="38" y2="58" />' +
-    '<line x1="24" y1="64" x2="38" y2="62" />' +
-    '<line x1="76" y1="56" x2="62" y2="58" />' +
-    '<line x1="76" y1="64" x2="62" y2="62" />' +
-    '</g>' +
-    '</svg>'
-  );
+  return `<img class="cat-img" src="${catUrl}" alt="ねこ" />`;
 }

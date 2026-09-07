@@ -12,30 +12,31 @@ const tile = (spec: string, kind: Tile['kind'] = 'road', fixed = false, fish = f
 });
 
 describe('tileSvg', () => {
-  it('開いている方角の数だけ線分を描く', () => {
-    expect((tileSvg(tile('NS')).match(/<line/g) ?? []).length).toBe(2);
-    expect((tileSvg(tile('NESW')).match(/<line/g) ?? []).length).toBe(4);
-    expect((tileSvg(tile('X')).match(/<line/g) ?? []).length).toBe(0);
+  it('道の無いタイルには通路画像を出さない', () => {
+    expect(tileSvg(tile('X'))).not.toContain('tile-road-img');
   });
 
-  it('行き止まりには先端の丸が付く', () => {
-    expect(tileSvg(tile('N'))).toContain('tile-cap');
-    expect(tileSvg(tile('NS'))).not.toContain('tile-cap');
+  it('開いている方角の数に応じた通路パーツを選ぶ', () => {
+    expect(tileSvg(tile('N'))).toContain('tile-road-end');
+    expect(tileSvg(tile('NS'))).toContain('road_straight');
+    expect(tileSvg(tile('NE'))).toContain('road_corner');
+    expect(tileSvg(tile('NES'))).toContain('road_t');
+    expect(tileSvg(tile('NESW'))).toContain('road_cross');
   });
 
-  it('道の無いタイルには中心の丸も出さない', () => {
-    expect(tileSvg(tile('X'))).not.toContain('tile-road-hub');
-    expect(tileSvg(tile('NS'))).toContain('tile-road-hub');
+  it('行き止まりだけ専用クラスが付く', () => {
+    expect(tileSvg(tile('N'))).toContain('tile-road-end');
+    expect(tileSvg(tile('NS'))).not.toContain('tile-road-end');
   });
 
-  it('固定タイルには専用のクラスと鋲が付く', () => {
+  it('固定タイルには専用のクラスと画像が付く', () => {
     const svg = tileSvg(tile('NS', 'road', true));
     expect(svg).toContain('tile-fixed');
-    expect(svg).toContain('tile-stud');
+    expect(svg).toContain('tile_fixed');
     expect(tileSvg(tile('NS'))).not.toContain('tile-fixed');
   });
 
-  it('ゴールには家のマークを描く', () => {
+  it('ゴールには家の画像を描く', () => {
     expect(tileSvg(tile('NS', 'goal'))).toContain('tile-goal');
   });
 
@@ -45,7 +46,7 @@ describe('tileSvg', () => {
     expect(svg).toContain('tile-fixed');
   });
 
-  it('魚があれば魚のマークを描く', () => {
+  it('魚があれば魚の画像を描く', () => {
     expect(tileSvg(tile('NS', 'road', false, true))).toContain('tile-fish');
     expect(tileSvg(tile('NS'))).not.toContain('tile-fish');
   });
@@ -55,7 +56,8 @@ describe('tileSvg', () => {
     expect(svg).not.toMatch(/fill="#|stroke="#|fill="rgb|style="/);
   });
 
-  it('猫の SVG を返す', () => {
-    expect(catSvg()).toContain('cat-body');
+  it('猫の画像を返す', () => {
+    expect(catSvg()).toContain('cat-img');
+    expect(catSvg()).toContain('cat.png');
   });
 });
