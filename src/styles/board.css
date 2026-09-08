@@ -249,7 +249,9 @@
 }
 
 .cat {
-  transition: transform var(--anim-cat) ease-out;
+  /* 経路を複数マスたどるとき、区間ごとに ease-out で減速→再加速すると
+     マスごとに止まって見えてしまう。linear にして速度を一定に保つ。 */
+  transition: transform var(--anim-cat) linear;
 }
 
 .cat.cleared {
