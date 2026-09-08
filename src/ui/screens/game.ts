@@ -1,5 +1,5 @@
 import { canSlide, slideTargets } from '../../core/slide.ts';
-import { GameSession, reachableSet } from '../../core/game.ts';
+import { GameSession, reachableSet, shortestPath } from '../../core/game.ts';
 import { starsFor } from '../../core/rules.ts';
 import { idx } from '../../core/board.ts';
 import { getLevel, nextLevelId, worldOf } from '../../levels/index.ts';
@@ -15,6 +15,9 @@ export type ScreenDeps = { store: ProgressStore; go: (r: Route) => void };
 
 const STAR = '★';
 const NOSTAR = '☆';
+
+/** 1 マス歩くアニメーションの間隔。base.css の --anim-cat と合わせる。 */
+const WALK_STEP_MS = 120;
 
 export function renderGameScreen(
   root: HTMLElement,
@@ -87,6 +90,29 @@ export function renderGameScreen(
   const view = new BoardView(boardRoot, session.current.board);
   const input = new InputManager(document);
   let recorded = false;
+  let walking = false;
+  let walkTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function cancelWalk(): void {
+    if (walkTimer !== null) clearTimeout(walkTimer);
+    walkTimer = null;
+    walking = false;
+  }
+
+  /** 経路を 1 マスずつ歩かせる。斜めに突っ切らず、実際に通るマスを順に描画するため。 */
+  function walkAlong(path: Dir[]): void {
+    if (path.length === 0) return;
+    walking = true;
+    const step = (i: number): void => {
+      act(() => session.walk(path[i]!));
+      if (i + 1 < path.length) {
+        walkTimer = setTimeout(() => step(i + 1), WALK_STEP_MS);
+      } else {
+        cancelWalk();
+      }
+    };
+    step(0);
+  }
 
   function draw(): void {
     const s = session.current;
@@ -135,26 +161,30 @@ export function renderGameScreen(
   }
 
   view.onCellClick((p) => {
-    if (!message.hidden) return;
+    if (!message.hidden || walking) return;
     const s = session.current;
     // タップは常に歩行。到達領域外なら何もしない。
-    if (reachableSet(s).has(idx(s.board, p.r, p.c))) act(() => session.walkTo(p));
+    if (!reachableSet(s).has(idx(s.board, p.r, p.c))) return;
+    const path = shortestPath(s, p);
+    if (path) walkAlong(path);
   });
 
   input.on('walk', (d) => {
-    if (!message.hidden || d === undefined) return;
+    if (!message.hidden || walking || d === undefined) return;
     act(() => session.walk(d as Dir));
   });
   input.on('slide', (p) => {
-    if (!message.hidden || p === undefined) return;
+    if (!message.hidden || walking || p === undefined) return;
     const target = p as Pos;
     if (canSlide(session.current.board, target)) act(() => session.slide(target));
   });
   input.on('undo', () => {
     if (!message.hidden) return;
+    cancelWalk();
     act(() => session.undo());
   });
   input.on('restart', () => {
+    cancelWalk();
     recorded = false;
     message.hidden = true;
     act(() => session.reset());
@@ -171,9 +201,11 @@ export function renderGameScreen(
 
   q('.back-btn').addEventListener('click', () => deps.go({ screen: 'select' }));
   undoBtn.addEventListener('click', () => {
+    cancelWalk();
     act(() => session.undo());
   });
   q('.retry-btn').addEventListener('click', () => {
+    cancelWalk();
     recorded = false;
     message.hidden = true;
     act(() => session.reset());
@@ -184,6 +216,7 @@ export function renderGameScreen(
     if (next) deps.go({ screen: 'play', levelId: next });
   });
   q('.again-btn').addEventListener('click', () => {
+    cancelWalk();
     recorded = false;
     message.hidden = true;
     act(() => session.reset());
@@ -193,6 +226,7 @@ export function renderGameScreen(
   draw();
 
   return () => {
+    cancelWalk();
     input.destroy();
     view.destroy();
   };

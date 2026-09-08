@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderGameScreen } from '../../src/ui/screens/game.ts';
+import { GameSession } from '../../src/core/game.ts';
 import { ProgressStore, mapKV } from '../../src/ui/storage.ts';
 import type { Route } from '../../src/ui/router.ts';
 
@@ -147,6 +148,23 @@ describe('対局画面', () => {
     swipe(tile(3, 4));
     expect(before).toBe('0');
     expect(q('.moves').textContent).toBe('1');
+    cleanup();
+  });
+
+  // (2,2) の猫から (3,3) へは 南→東 の角を曲がる経路でしか行けない。
+  // 斜めにワープさせず、実際に通るマスを 1 マスずつ・時間差で歩かせる。
+  it('タップでの複数マス移動は経路を1マスずつたどる（斜めにワープしない）', () => {
+    vi.useFakeTimers();
+    const walkSpy = vi.spyOn(GameSession.prototype, 'walk');
+    open('W3-1');
+    tile(3, 3).click();
+    expect(walkSpy).toHaveBeenCalledTimes(1);
+    expect(walkSpy).toHaveBeenLastCalledWith(2); // 南
+    vi.advanceTimersByTime(120);
+    expect(walkSpy).toHaveBeenCalledTimes(2);
+    expect(walkSpy).toHaveBeenLastCalledWith(1); // 東
+    walkSpy.mockRestore();
+    vi.useRealTimers();
     cleanup();
   });
 
