@@ -78,6 +78,48 @@ export class BoardView {
     el.style.setProperty('--c', String(c));
   }
 
+  /** 1 マスの実ピクセルサイズ。--step は viewport 単位を含む calc() なので、
+   * カスタムプロパティの文字列をパースせず実測する。 */
+  private stepPx(): number {
+    return this.root.getBoundingClientRect().width / this.width;
+  }
+
+  /** 猫を CSS トランジションなしで即座に配置する／通常のトランジションに戻す。 */
+  setCatAnimated(on: boolean): void {
+    this.catEl.style.transition = on ? '' : 'none';
+  }
+
+  /**
+   * 経路（始点を含む）に沿って猫を 1 本の連続したアニメーションで動かす。
+   * 区間ごとに transition を打ち直す方式だと、境界で減速→再加速して
+   * 止まって見えてしまうため、Web Animations API で経路全体を
+   * 一定速度のキーフレームとして一度に再生する。
+   */
+  walkCatThrough(path: Pos[], stepMs: number): Promise<void> {
+    // jsdom など Web Animations API のない環境では即座に最終位置へ（place() 済み）。
+    if (path.length < 2 || typeof this.catEl.animate !== 'function') return Promise.resolve();
+    const step = this.stepPx();
+    const keyframes = path.map((p) => ({
+      transform: `translate(${p.c * step}px, ${p.r * step}px)`,
+    }));
+    const anim = this.catEl.animate(keyframes, {
+      duration: stepMs * (path.length - 1),
+      easing: 'linear',
+    });
+    return anim.finished.then(
+      () => anim.cancel(),
+      () => {},
+    );
+  }
+
+  /** 経路アニメーションの途中で歩行が中断された（undo/やりなおし等）ときに呼ぶ。 */
+  cancelCatAnimation(): void {
+    if (typeof this.catEl.getAnimations === 'function') {
+      for (const a of this.catEl.getAnimations()) a.cancel();
+    }
+    this.setCatAnimated(true);
+  }
+
   render(state: GameState, opts: RenderOpts): void {
     const b = state.board;
     const slid = new Set(opts.slidable.map((p) => idx(b, p.r, p.c)));

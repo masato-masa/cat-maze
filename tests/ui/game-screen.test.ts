@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderGameScreen } from '../../src/ui/screens/game.ts';
 import { GameSession } from '../../src/core/game.ts';
+import { BoardView } from '../../src/ui/board-view.ts';
 import { ProgressStore, mapKV } from '../../src/ui/storage.ts';
 import type { Route } from '../../src/ui/router.ts';
 
@@ -152,19 +153,25 @@ describe('対局画面', () => {
   });
 
   // (2,2) の猫から (3,3) へは 南→東 の角を曲がる経路でしか行けない。
-  // 斜めにワープさせず、実際に通るマスを 1 マスずつ・時間差で歩かせる。
-  it('タップでの複数マス移動は経路を1マスずつたどる（斜めにワープしない）', () => {
-    vi.useFakeTimers();
-    const walkSpy = vi.spyOn(GameSession.prototype, 'walk');
+  // 状態はその場で確定し（一気に）、見た目のアニメーションには
+  // 実際に通るマス（斜めではなく南→東の折れ線）がそのまま渡る。
+  it('タップでの複数マス移動は状態がその場で確定し、経路どおりのマスがアニメーションに渡る', () => {
+    const walkToSpy = vi.spyOn(GameSession.prototype, 'walkTo');
+    const animSpy = vi.spyOn(BoardView.prototype, 'walkCatThrough');
     open('W3-1');
     tile(3, 3).click();
-    expect(walkSpy).toHaveBeenCalledTimes(1);
-    expect(walkSpy).toHaveBeenLastCalledWith(2); // 南
-    vi.advanceTimersByTime(120);
-    expect(walkSpy).toHaveBeenCalledTimes(2);
-    expect(walkSpy).toHaveBeenLastCalledWith(1); // 東
-    walkSpy.mockRestore();
-    vi.useRealTimers();
+    expect(walkToSpy).toHaveBeenCalledWith({ r: 3, c: 3 });
+    expect(q('.moves').textContent).toBe('0'); // 歩行なので手数は増えない
+    expect(animSpy).toHaveBeenCalledWith(
+      [
+        { r: 2, c: 2 },
+        { r: 3, c: 2 },
+        { r: 3, c: 3 },
+      ],
+      expect.any(Number),
+    );
+    walkToSpy.mockRestore();
+    animSpy.mockRestore();
     cleanup();
   });
 

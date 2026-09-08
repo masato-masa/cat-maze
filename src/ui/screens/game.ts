@@ -4,6 +4,7 @@ import { starsFor } from '../../core/rules.ts';
 import { idx } from '../../core/board.ts';
 import { getLevel, nextLevelId, worldOf } from '../../levels/index.ts';
 import { solveFrom } from '../../solver/search.ts';
+import { delta } from '../../core/conn.ts';
 import type { Dir } from '../../core/conn.ts';
 import type { Pos } from '../../core/types.ts';
 import { BoardView } from '../board-view.ts';
@@ -91,27 +92,22 @@ export function renderGameScreen(
   const input = new InputManager(document);
   let recorded = false;
   let walking = false;
-  let walkTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function cancelWalk(): void {
-    if (walkTimer !== null) clearTimeout(walkTimer);
-    walkTimer = null;
+  function stopCatWalk(): void {
+    view.cancelCatAnimation();
     walking = false;
   }
 
-  /** 経路を 1 マスずつ歩かせる。斜めに突っ切らず、実際に通るマスを順に描画するため。 */
-  function walkAlong(path: Dir[]): void {
-    if (path.length === 0) return;
-    walking = true;
-    const step = (i: number): void => {
-      act(() => session.walk(path[i]!));
-      if (i + 1 < path.length) {
-        walkTimer = setTimeout(() => step(i + 1), WALK_STEP_MS);
-      } else {
-        cancelWalk();
-      }
-    };
-    step(0);
+  /** 猫の現在地から経路（Dir の列）をたどったマス目の座標列（始点を含む）を作る。 */
+  function pathPositions(start: Pos, dirs: Dir[]): Pos[] {
+    const out: Pos[] = [start];
+    let cur = start;
+    for (const d of dirs) {
+      const { dr, dc } = delta(d);
+      cur = { r: cur.r + dr, c: cur.c + dc };
+      out.push(cur);
+    }
+    return out;
   }
 
   function draw(): void {
@@ -166,7 +162,15 @@ export function renderGameScreen(
     // タップは常に歩行。到達領域外なら何もしない。
     if (!reachableSet(s).has(idx(s.board, p.r, p.c))) return;
     const path = shortestPath(s, p);
-    if (path) walkAlong(path);
+    if (!path || path.length === 0) return;
+    const waypoints = pathPositions(s.cat, path);
+    walking = true;
+    view.setCatAnimated(false);
+    act(() => session.walkTo(p));
+    view.walkCatThrough(waypoints, WALK_STEP_MS).then(() => {
+      view.setCatAnimated(true);
+      walking = false;
+    });
   });
 
   input.on('walk', (d) => {
@@ -180,11 +184,11 @@ export function renderGameScreen(
   });
   input.on('undo', () => {
     if (!message.hidden) return;
-    cancelWalk();
+    stopCatWalk();
     act(() => session.undo());
   });
   input.on('restart', () => {
-    cancelWalk();
+    stopCatWalk();
     recorded = false;
     message.hidden = true;
     act(() => session.reset());
@@ -201,11 +205,11 @@ export function renderGameScreen(
 
   q('.back-btn').addEventListener('click', () => deps.go({ screen: 'select' }));
   undoBtn.addEventListener('click', () => {
-    cancelWalk();
+    stopCatWalk();
     act(() => session.undo());
   });
   q('.retry-btn').addEventListener('click', () => {
-    cancelWalk();
+    stopCatWalk();
     recorded = false;
     message.hidden = true;
     act(() => session.reset());
@@ -216,7 +220,7 @@ export function renderGameScreen(
     if (next) deps.go({ screen: 'play', levelId: next });
   });
   q('.again-btn').addEventListener('click', () => {
-    cancelWalk();
+    stopCatWalk();
     recorded = false;
     message.hidden = true;
     act(() => session.reset());
@@ -226,7 +230,7 @@ export function renderGameScreen(
   draw();
 
   return () => {
-    cancelWalk();
+    stopCatWalk();
     input.destroy();
     view.destroy();
   };
