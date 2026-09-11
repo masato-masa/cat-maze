@@ -6,7 +6,8 @@
 // https://github.com/gabrielecirulli/2048
 import { idx } from '../core/board.ts';
 import type { Board, GameState, Pos } from '../core/types.ts';
-import { catSvg, tileSvg } from './tile-svg.ts';
+import { CatSprite } from './cat-sprite.ts';
+import { tileSvg } from './tile-svg.ts';
 
 export type RenderOpts = {
   reachable: Set<number>;
@@ -21,6 +22,7 @@ export class BoardView {
   private tileLayer: HTMLElement;
   private actorLayer: HTMLElement;
   private catEl: HTMLElement;
+  private cat: CatSprite;
   private tiles = new Map<number, HTMLElement>();
   private clickCb: ((p: Pos) => void) | null = null;
   private width: number;
@@ -56,7 +58,8 @@ export class BoardView {
 
     this.catEl = document.createElement('div');
     this.catEl.className = 'cat';
-    this.catEl.innerHTML = catSvg();
+    this.cat = new CatSprite();
+    this.catEl.append(this.cat.el);
     this.actorLayer.appendChild(this.catEl);
 
     root.addEventListener('click', this.onClick);
@@ -82,6 +85,11 @@ export class BoardView {
    * カスタムプロパティの文字列をパースせず実測する。 */
   private stepPx(): number {
     return this.root.getBoundingClientRect().width / this.width;
+  }
+
+  /** 猫の表情と向き。ゲーム画面が状態の変化に合わせて呼ぶ。 */
+  get catSprite(): CatSprite {
+    return this.cat;
   }
 
   /** 猫を CSS トランジションなしで即座に配置する／通常のトランジションに戻す。 */
@@ -189,6 +197,7 @@ export class BoardView {
   }
 
   destroy(): void {
+    this.cat.destroy();
     this.root.removeEventListener('click', this.onClick);
     this.clickCb = null;
     this.tiles.clear();

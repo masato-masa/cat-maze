@@ -220,14 +220,37 @@
   }
 }
 
-.cat-img {
+/* 猫は 3 層。位置（.cat）／向き（.cat-flip）／呼吸（.cat-img）。
+   1 つの要素に重ねると、歩行アニメの transform と互いを打ち消し合う。 */
+.cat-flip {
   position: absolute;
   top: 18%;
   left: 18%;
   width: 64%;
   height: 64%;
+  transform: scaleX(var(--flip, 1));
+}
+
+.cat-img {
   display: block;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  animation: cat-breathe 3.6s ease-in-out infinite;
+}
+
+/* ごく浅い呼吸。止まっている絵より生き物らしく見えるが、
+   気づかれるほど大きく動かすと目障りになる。 */
+@keyframes cat-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
 }
 
 .cat {

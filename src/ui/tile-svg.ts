@@ -5,8 +5,6 @@ import { ALL_DIRS, isOpen } from '../core/conn.ts';
 import type { Dir } from '../core/conn.ts';
 import type { Tile } from '../core/types.ts';
 
-import catUrl from '../assets/img/cat.png';
-
 /** タイルの内部座標系は 100x100。中心は (50,50)。 */
 const EDGE: Record<Dir, [number, number]> = {
   0: [50, 0],
@@ -70,9 +68,4 @@ export function tileSvg(tile: Tile): string {
   if (tile.fish) parts.push(fishSvg());
 
   return `<div class="${wrapClass}">${parts.join('')}</div>`;
-}
-
-/** ねこ。盤面とは別のレイヤに置く。 */
-export function catSvg(): string {
-  return `<img class="cat-img" src="${catUrl}" alt="ねこ" />`;
 }

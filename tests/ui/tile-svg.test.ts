@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { catSvg, tileSvg } from '../../src/ui/tile-svg.ts';
+import { tileSvg } from '../../src/ui/tile-svg.ts';
 import { parseConn } from '../../src/core/conn.ts';
 import type { Tile } from '../../src/core/types.ts';
 
@@ -72,10 +72,5 @@ describe('tileSvg', () => {
 
   it('明滅する光の膜を持たない', () => {
     expect(tileSvg(tile('NESW'))).not.toContain('tile-reach-glow');
-  });
-
-  it('猫の画像を返す', () => {
-    expect(catSvg()).toContain('cat-img');
-    expect(catSvg()).toContain('cat.png');
   });
 });
