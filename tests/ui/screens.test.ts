@@ -75,7 +75,14 @@ describe('ホーム画面', () => {
   it('進捗が無ければ「はじめる」', () => {
     renderHomeScreen(root, { store, go });
     expect(root.querySelector('.resume-btn')!.textContent!.trim()).toBe('はじめる');
-    expect(root.querySelector<HTMLElement>('.reset-btn')!.hidden).toBe(true);
+  });
+
+  it('本番の導線に「あそびかた」と「きろくをけす」を置かない', () => {
+    // ? はプレイ画面の右上へ、きろくをけすは右下の「テスト用」の中へ移した。
+    renderHomeScreen(root, { store, go });
+    expect(root.textContent).not.toContain('あそびかた');
+    expect(root.textContent).not.toContain('きろくを けす');
+    expect(root.querySelector('.dev-pill')).not.toBeNull();
   });
 
   it('進捗があれば「つづきから」で続きのステージへ行く', () => {
@@ -90,18 +97,36 @@ describe('ホーム画面', () => {
     store.record('W1-1', 3, 1);
     store.record('W1-2', 2, 3);
     renderHomeScreen(root, { store, go });
-    expect(root.querySelector('.home-stars')!.textContent).toContain(`5 / ${ALL_LEVELS.length * 3}`);
+    expect(root.querySelector('.home-progress')!.textContent).toContain(
+      `5 / ${ALL_LEVELS.length * 3}`,
+    );
   });
 
-  it('きろくを けす は確認してから消す', () => {
+  it('きろくを けす は開発者メニューの中にあり、確認してから消す', () => {
     store.record('W1-1', 3, 1);
     renderHomeScreen(root, { store, go });
+    (root.querySelector('.dev-pill') as HTMLElement).click();
+
+    const clearBtn = (): HTMLElement => document.querySelector('.overlay .clear-all')!;
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    (root.querySelector('.reset-btn') as HTMLElement).click();
+    clearBtn().click();
     expect(store.totalStars()).toBe(3);
     confirmSpy.mockReturnValue(true);
-    (root.querySelector('.reset-btn') as HTMLElement).click();
+    clearBtn().click();
     expect(store.totalStars()).toBe(0);
     confirmSpy.mockRestore();
+
+    document.querySelector<HTMLElement>('.overlay .sheet-close')!.click();
+    expect(document.querySelector('.overlay')).toBeNull();
+  });
+
+  it('開発者メニューの全ステージ開放で、最後のステージまで解放される', () => {
+    renderHomeScreen(root, { store, go });
+    (root.querySelector('.dev-pill') as HTMLElement).click();
+    document.querySelector<HTMLElement>('.overlay .unlock-all')!.click();
+
+    const last = ALL_LEVELS[ALL_LEVELS.length - 1]!;
+    expect(store.isUnlocked(last.id)).toBe(true);
+    document.querySelector<HTMLElement>('.overlay .sheet-close')!.click();
   });
 });

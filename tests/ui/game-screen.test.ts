@@ -244,11 +244,20 @@ describe('プレイ画面のレイアウト', () => {
     cleanup();
   });
 
-  it('さかなの表示はステージタイトルの下に入る', () => {
+  it('さかなの表示はタイトルより下の行に入る', () => {
     open('W3-1');
-    // ヘッダ右側に手数と並べていた頃は 3 つが横に詰まっていた。
-    // タイトルの下へ移して、左に積む形にしている。
-    expect(q('.level-title').querySelector('.fish-pill')).not.toBeNull();
+    // 行 1 に置いてよいのは 戻る・タイトル・設定・? の 4 つだけ。
+    // 手数もさかなも 2 行目（.status-bar）に積む。
+    expect(q('.status-bar').querySelector('.fish-pill')).not.toBeNull();
+    expect(q('.header-row').querySelector('.fish-pill')).toBeNull();
+    cleanup();
+  });
+
+  it('ヘッダー右上に設定と遊びかたを持つ', () => {
+    open('W1-1');
+    const actions = q('.header-actions');
+    expect(actions.querySelector('.settings-btn')).not.toBeNull();
+    expect(actions.querySelector('.help-btn')).not.toBeNull();
     cleanup();
   });
 
@@ -258,9 +267,13 @@ describe('プレイ画面のレイアウト', () => {
     cleanup();
   });
 
-  it('音量ボタンは持たない', () => {
+  it('音の入切はヘッダーに直接置かず、設定シートの中に入れる', () => {
     open('W1-1');
     expect(root.querySelector('.mute-btn')).toBeNull();
+    q('.settings-btn').click();
+    expect(document.querySelector('.overlay .mute-toggle')).not.toBeNull();
+    document.querySelector<HTMLElement>('.overlay .sheet-close')!.click();
+    expect(document.querySelector('.overlay .mute-toggle')).toBeNull();
     cleanup();
   });
 });

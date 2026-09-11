@@ -1,4 +1,5 @@
 import { ALL_LEVELS, WORLDS } from '../../levels/index.ts';
+import { iconBack } from '../icons.ts';
 import type { ScreenDeps } from './game.ts';
 
 const STAR = '★';
@@ -37,13 +38,25 @@ export function renderSelectScreen(root: HTMLElement, deps: ScreenDeps): () => v
   }).join('');
 
   root.innerHTML = `
-    <div class="screen select-screen">
-      <header class="menu-header">
-        <button class="icon-btn back-btn" type="button" aria-label="もどる">‹</button>
-        <h1 class="menu-title">ステージ</h1>
-        <span class="total-stars">${STAR} ${store.totalStars()} / ${ALL_LEVELS.length * 3}</span>
+    <div class="app select-screen">
+      <header class="header">
+        <div class="header-row">
+          <div class="header-left">
+            <button class="icon-btn back-btn" type="button" aria-label="もどる">${iconBack()}</button>
+          </div>
+          <h1 class="title">ステージ</h1>
+          <div class="header-actions"></div>
+        </div>
+        <div class="status-bar">
+          <span class="stat">
+            <span class="star on">${STAR}</span>
+            <span class="stat-num">${store.totalStars()}</span>
+            <span class="stat-slash">/</span>
+            <span class="stat-num stat-total">${ALL_LEVELS.length * 3}</span>
+          </span>
+        </div>
       </header>
-      ${worlds}
+      <div class="worlds">${worlds}</div>
     </div>`;
 
   const onClick = (ev: Event): void => {

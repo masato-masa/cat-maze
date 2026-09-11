@@ -1,180 +1,56 @@
-/* 色はすべてトークン経由。ダークは同じトークンを上書きするだけにする。 */
+/* 共通のクロームは shared/ にある（出どころは C:\claude\shared-ui）。
+   このファイルは猫迷路固有の地の色と、画面の外枠だけを持つ。
+
+   ダークモードは持たない。4 つのゲームのうちここだけが暗くなると、
+   行き来したときに別のアプリに見えるため、統一にあたって外した。 */
+@import './shared/tokens.css';
+@import './shared/chrome.css';
+
+/* 盤面の色。にゃんどくのパステルに寄せつつ、
+   「道・動かせるタイル・固定タイル・穴・鋲」が見分けられる明度差を確保してある
+   （どの隣り合う 2 色も相対輝度で 14% 以上離してある）。 */
 :root {
-  color-scheme: light dark;
+  --road: #dca35c;
+  --road-lit: #f7c95c; /* 到達可能なマスの道。にゃんどくの猫マスと同じ色 */
+  --road-outline: #8d6740;
 
-  --bg: #f6efe4;
-  --bg-soft: #efe5d6;
-  --surface: #fffaf2;
-  --surface-2: #f2e8d9;
-  --ink: #3d3226;
-  --ink-soft: #7c6a56;
-  --line: #ddcdb6;
-
-  --accent: #e08a3c;
-  --accent-ink: #ffffff;
-  --accent-soft: #f7d9b6;
-
-  --road: #d68d4c;
-  --road-lit: #e5a468;      /* 到達可能なマスの道 */
-  --road-outline: #8a5230;  /* 旧 #47230f。ほぼ黒で硬かったので地に馴染ませる */
-  --tile: #fff6e8;
+  --tile: #f3ede4; /* 動かせるタイル */
   /* 固定タイルは盤に埋め込まれている側。影を落とさないぶん、地の色でも差を付ける。 */
-  --tile-fixed: #ddcdb4;
-  /* 動かせるタイルの落ち影。暗いテーマでは濃くしないと見えない。 */
-  --tile-lift: 0 2px 3px rgb(0 0 0 / 0.16);
+  --tile-fixed: #e2d8cb;
+  /* 動かせるタイルの落ち影。これが「持ち上がっている」唯一の手がかり。 */
+  --tile-lift: 0 2px 3px rgb(115 80 86 / 0.18);
   /* 穴の窪み。固定タイルより必ず暗くする。同じ濃さに寄せると、
      道を持たない固定タイルと穴が見分けられなくなる。 */
-  --hole-well: #cebc9f;
-  --stud: #a8927a;
+  --hole-well: #c9bcab;
+  --stud: #ab9a86;
 
-  --cat: #4b3b2c;
-  --cat-ink: #fff6e8;
-  --goal: #d9603f;
-  --fish: #4e9ec4;
+  --cat: #6f5a5e;
+  --cat-ink: #fff3ee;
+  --goal: #c4685e;
+  --fish: #6aa9c9;
 
-  --star: #eab308;
-  --star-off: #d8c9b3;
+  --star: #f3c55a;
+  --star-off: #e4dcd5;
 
   --radius: 14px;
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  /* board.css が古い名前で参照しているぶんの受け皿。 */
+  --shadow: var(--shadow-xs);
+  --ink: var(--title);
+  --ink-soft: var(--muted);
   --anim: 180ms;
   --anim-cat: 120ms;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #221c17;
-    --bg-soft: #2b241d;
-    --surface: #33291f;
-    --surface-2: #3d3126;
-    --ink: #f2e6d5;
-    --ink-soft: #b9a68e;
-    --line: #4d3f31;
-
-    --accent: #e39a54;
-    --accent-ink: #241c14;
-    --accent-soft: #57412a;
-
-    --road: #dc9c5c;
-    --road-lit: #eeb377;
-    --road-outline: #5c3418;
-    --tile: #453729;
-    --tile-fixed: #3a3025;
-    --tile-lift: 0 2px 4px rgb(0 0 0 / 0.45);
-    --hole-well: #1b1611;
-    --stud: #8a7358;
-
-    --cat: #f2e6d5;
-    --cat-ink: #33291f;
-    --goal: #e8795a;
-    --fish: #6cb6d8;
-
-    --star: #f5c542;
-    --star-off: #5a4b39;
-  }
-}
-
-* {
-  box-sizing: border-box;
-}
-
-/* display を指定した要素でも hidden 属性が効くようにする */
-[hidden] {
-  display: none !important;
-}
-
 html,
 body {
-  margin: 0;
   min-height: 100%;
-}
-
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: 'Hiragino Maru Gothic ProN', 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
-  -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
 
-#app {
-  min-height: 100dvh;
-}
-
-.screen {
-  max-width: 560px;
+/* 画面の幅。共通の .app は中央寄せなので、中の要素が自分で幅を決める。 */
+.app {
+  max-width: 592px;
   margin: 0 auto;
-  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
-
-.btn {
-  appearance: none;
-  border: 2px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-  font-weight: 700;
-  border-radius: var(--radius);
-  padding: 12px 18px;
-  min-height: 44px;
-  cursor: pointer;
-  box-shadow: var(--shadow);
-  transition: transform 80ms ease-out, background 120ms;
-}
-
-.btn:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow: none;
-}
-
-.btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-
-.btn.big {
-  font-size: 1.15rem;
-  padding: 16px 24px;
-}
-
-.btn.small {
-  font-size: 0.85rem;
-  padding: 8px 14px;
-  min-height: 36px;
-}
-
-.btn.ghost {
-  background: transparent;
-  border-color: transparent;
-  color: var(--ink-soft);
-  box-shadow: none;
-}
-
-.icon-btn {
-  appearance: none;
-  border: none;
-  background: transparent;
-  color: var(--ink);
-  font-size: 2rem;
-  line-height: 1;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.icon-btn:active {
-  background: var(--surface-2);
 }
 
 .star {
@@ -188,12 +64,5 @@ body {
 .notice {
   padding: 32px;
   text-align: center;
-  color: var(--ink-soft);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition-duration: 1ms !important;
-    animation-duration: 1ms !important;
-  }
+  color: var(--muted);
 }

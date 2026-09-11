@@ -1,11 +1,37 @@
 // 効果音。音声ファイルを持たず WebAudio で合成する。
 // 読み込みゼロ・容量ゼロ・遅延ゼロ。にゃんどくの src/core/sfx.ts と同じ作法。
 //
-// 消音の仕組みは持たない。音量の上げ下げと消音は端末側に用意されているので、
-// アプリ内に二重に置かない。そのぶん音は控えめ（ピーク 0.25 程度）にしてある。
+// 音は控えめ（ピーク 0.25 程度）。入切は設定シートから切り替え、
+// 次に開いたときも残す（4 つのゲームで同じ扱いにするため）。
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
+
+const MUTE_KEY = 'catmaze_muted';
+
+function loadMuted(): boolean {
+  try {
+    return window.localStorage.getItem(MUTE_KEY) === '1';
+  } catch {
+    // プライベートモードなどで読めないことがある。音が鳴るだけなので既定に戻す。
+    return false;
+  }
+}
+
+let muted = loadMuted();
+
+export function isMuted(): boolean {
+  return muted;
+}
+
+export function setMuted(value: boolean): void {
+  muted = value;
+  try {
+    window.localStorage.setItem(MUTE_KEY, value ? '1' : '0');
+  } catch {
+    /* 保存できなくても、その場の入切は効いている */
+  }
+}
 
 function audio(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -38,7 +64,7 @@ interface ToneOptions {
 
 function tone({ freq, duration, type = 'sine', gain = 0.06, delay = 0, slideTo }: ToneOptions): void {
   const ac = audio();
-  if (!ac || !master) return;
+  if (!ac || !master || muted) return;
   const t = ac.currentTime + delay;
   const osc = ac.createOscillator();
   const env = ac.createGain();
@@ -80,5 +106,6 @@ export function play(name: SfxName): void {
 
 /** 触覚。対応していない環境では何も起きない。 */
 export function buzz(pattern: number | number[]): void {
+  if (muted) return;
   navigator.vibrate?.(pattern);
 }

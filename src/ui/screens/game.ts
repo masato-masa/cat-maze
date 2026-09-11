@@ -10,7 +10,8 @@ import type { Pos } from '../../core/types.ts';
 import { BoardView } from '../board-view.ts';
 import { CatSprite } from '../cat-sprite.ts';
 import { InputManager } from '../input.ts';
-import { iconHint, iconRetry, iconUndo } from '../icons.ts';
+import { iconBack, iconGear, iconHelp, iconHint, iconRetry, iconUndo } from '../icons.ts';
+import { openHelpSheet, openSettingsSheet } from '../sheets.ts';
 import { buzz, play } from '../sfx.ts';
 import type { Route } from '../router.ts';
 import type { ProgressStore } from '../storage.ts';
@@ -39,17 +40,30 @@ export function renderGameScreen(
   let hint: Pos | null = null;
 
   root.innerHTML = `
-    <div class="screen game-screen">
-      <header class="game-header">
-        <button class="icon-btn back-btn" type="button" aria-label="もどる">‹</button>
-        <div class="level-title">
-          <span class="level-id">${world ? world.name : ''} ${def.id}</span>
-          <span class="level-name">${def.name}</span>
-          <span class="fish-pill" hidden><span class="fish-count"></span></span>
+    <div class="app app-game game-screen">
+      <!-- 行 1 はナビゲーションだけ。手数・さいたん・魚は必ず行 2 に置く。 -->
+      <header class="header">
+        <div class="header-row">
+          <div class="header-left">
+            <button class="icon-btn back-btn" type="button" aria-label="もどる">${iconBack()}</button>
+          </div>
+          <h1 class="title">${def.name}</h1>
+          <div class="header-actions">
+            <button class="icon-btn settings-btn" type="button" aria-label="設定">${iconGear()}</button>
+            <button class="icon-btn help-btn" type="button" aria-label="遊びかた">${iconHelp()}</button>
+          </div>
         </div>
-        <div class="move-counter">
-          <span class="moves">0</span>
-          <span class="moves-label">さいたん ${def.optimalMoves}</span>
+
+        <div class="status-bar">
+          <span class="stat">
+            <span class="stat-label">${world ? world.name : ''} ${def.id}</span>
+          </span>
+          <span class="stat">
+            <span class="stat-label">てすう</span>
+            <span class="stat-num moves">0</span>
+            <span class="stat-label">さいたん ${def.optimalMoves}</span>
+          </span>
+          <span class="stat fish-pill" hidden><span class="fish-count"></span></span>
         </div>
       </header>
 
@@ -60,22 +74,22 @@ export function renderGameScreen(
         <span class="ctl"><b>スワイプ</b> タイルを うごかす</span>
       </p>
 
-      <footer class="game-footer">
+      <footer class="footer">
         <button class="tool undo-btn" type="button" aria-label="もどす">${iconUndo()}</button>
         <button class="tool retry-btn" type="button" aria-label="やりなおし">${iconRetry()}</button>
         <button class="tool hint-btn" type="button" aria-label="ヒント">${iconHint()}</button>
       </footer>
 
-      <div class="game-message" hidden>
-        <div class="message-card">
+      <div class="overlay game-message" hidden>
+        <div class="sheet message-card">
           <div class="banner-cat"></div>
           <p class="message-title">クリア!</p>
           <div class="stars"></div>
           <p class="message-moves"></p>
           <div class="message-buttons">
-            <button class="btn primary next-btn" type="button">つぎへ</button>
-            <button class="btn again-btn" type="button">もういちど</button>
-            <button class="btn select-btn" type="button">ステージせんたく</button>
+            <button class="sheet-btn next-btn" type="button">つぎへ</button>
+            <button class="sheet-btn quiet again-btn" type="button">もういちど</button>
+            <button class="sheet-btn quiet select-btn" type="button">ステージせんたく</button>
           </div>
         </div>
       </div>
@@ -319,6 +333,8 @@ export function renderGameScreen(
     stopCatWalk();
     deps.go({ screen: 'home' });
   });
+  q('.settings-btn').addEventListener('click', () => openSettingsSheet());
+  q('.help-btn').addEventListener('click', () => openHelpSheet());
   undoBtn.addEventListener('click', () => {
     stopCatWalk();
     act(() => session.undo());

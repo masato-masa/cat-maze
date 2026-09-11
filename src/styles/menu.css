@@ -1,56 +1,30 @@
+/* ホームとステージ選択。ホームの骨組み（タイトル・ボタン・進捗）は
+   shared/chrome.css が持つ。ここはこの 2 画面だけのものを置く。 */
+
 .home-screen {
-  align-items: center;
-  justify-content: center;
   text-align: center;
-  gap: 4px;
 }
 
+/* ホームの猫は SVG を 1 枚だけ置く。共通の .home-art は正方形の枠。 */
 .home-art {
   position: relative;
-  width: 132px;
-  height: 132px;
-  margin: 0 auto;
 }
 
 .home-title {
-  margin: 4px 0 0;
   font-size: 2.4rem;
   letter-spacing: 0.08em;
 }
 
-.home-sub {
-  margin: 0 0 24px;
-  color: var(--ink-soft);
-}
-
-.home-buttons {
-  display: grid;
-  gap: 12px;
-  width: min(100%, 300px);
-}
-
-.home-stars {
-  margin: 20px 0 4px;
+.home-progress {
   color: var(--star);
   font-weight: 700;
+  font-size: 15px;
 }
 
-.menu-header {
-  display: grid;
-  grid-template-columns: 44px 1fr auto;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.menu-title {
-  margin: 0;
-  font-size: 1.3rem;
-}
-
-.total-stars {
-  color: var(--star);
-  font-weight: 700;
+/* ---- ステージ選択 ---- */
+/* 共通の .app は中央寄せなので、ワールドの列は自分で幅いっぱいを取る。 */
+.worlds {
+  width: 100%;
 }
 
 .world {

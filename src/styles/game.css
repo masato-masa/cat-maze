@@ -1,76 +1,30 @@
+/* プレイ画面。ヘッダー・丸ボタン・ツール行・シートは shared/chrome.css が持つ。
+   ここはこの画面だけのもの（魚のピル・操作の説明・クリアのカード）を置く。 */
+
 .game-screen {
   gap: 4px;
   /* フッターが必ず見えるように、画面の高さに収める */
   height: 100dvh;
+  min-height: 0;
   overflow: hidden;
 }
 
-/* 上端で揃える。左の列は魚の有無で 2 行にも 3 行にもなるが、
-   中央揃えにすると行数で手数の位置が動いてしまう。 */
-.game-header {
-  display: grid;
-  grid-template-columns: 44px 1fr auto;
-  align-items: start;
-  gap: 8px;
+/* ステージ番号と手数は、ヘッダー 2 段目のピルに載せる。
+   数字だけは大きく出したいので、共通の .stat-num を一段上げる。 */
+.status-bar .stat-num {
+  font-size: 18px;
 }
 
 .fish-pill {
-  /* 親が縦並びなので、伸びないように自分の幅で止める */
-  align-self: flex-start;
-  margin-top: 4px;
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  font-size: 0.8rem;
-  font-weight: 700;
   color: var(--fish);
-  white-space: nowrap;
 }
 
-/* ステージ名の下に魚を積む。以前は手数・魚・音量を右に横並びにしていて、
-   タイトルと合わせて画面の上が詰まって見えていた。 */
-.level-title {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.2;
-  min-width: 0;
+.board-wrap {
+  width: 100%;
 }
 
-.level-id {
-  font-size: 0.75rem;
-  color: var(--ink-soft);
-}
-
-.level-name {
-  font-size: 1.05rem;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.move-counter {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.1;
-}
-
-.moves {
-  font-size: 1.6rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.moves-label {
-  font-size: 0.7rem;
-  color: var(--ink-soft);
-}
-
+/* 説明は最初の 1 手まで。ずっと出しておくと画面が説明くさくなる。
+   同じ内容は ? の遊びかたにも入っているので、消えても迷子にならない。 */
 .controls-line {
   display: flex;
   flex-wrap: wrap;
@@ -78,61 +32,25 @@
   gap: 4px 14px;
   margin: 0;
   font-size: 0.7rem;
-  color: var(--ink-soft);
+  color: var(--muted);
 }
 
 .controls-line b {
-  color: var(--ink);
+  color: var(--title);
   font-weight: 700;
 }
 
-/* フッタの丸ボタン。寸法はにゃんどくの .tool の実測値。 */
-.game-footer {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  padding-top: 8px;
-}
-
-.tool {
-  appearance: none;
-  width: 60px;
-  height: 60px;
+/* ---- クリアのカード ---- */
+.message-card {
+  width: min(88vw, 360px);
+  padding: 28px 34px 30px;
+  text-align: center;
   display: grid;
-  place-items: center;
-  padding: 10px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: var(--shadow);
-  cursor: pointer;
-  transition: transform 0.15s var(--ease), opacity 0.15s var(--ease);
-}
-
-.tool:active:not(:disabled) {
-  transform: scale(0.9);
-}
-
-.tool:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.tool svg {
-  width: 40px;
-  height: 40px;
+  gap: 4px;
+  justify-items: center;
 }
 
 .game-message {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: color-mix(in srgb, var(--bg) 66%, transparent);
-  backdrop-filter: blur(3px);
-  z-index: 10;
   animation: fade-in 200ms ease-out;
 }
 
@@ -140,20 +58,6 @@
   from {
     opacity: 0;
   }
-}
-
-.message-card {
-  background: var(--surface);
-  border: 0;
-  border-radius: 22px;
-  box-shadow: 0 18px 50px rgb(115 80 86 / 0.16);
-  padding: 28px 34px 30px;
-  text-align: center;
-  display: grid;
-  gap: 4px;
-  justify-items: center;
-  min-width: 258px;
-  width: min(88vw, 360px);
 }
 
 .banner-cat {
@@ -174,6 +78,7 @@
   margin: 0;
   font-size: 1.6rem;
   font-weight: 800;
+  color: var(--title);
 }
 
 .stars {
@@ -203,10 +108,11 @@
 
 .message-moves {
   margin: 0 0 18px;
-  color: var(--ink-soft);
+  color: var(--muted);
 }
 
 .message-buttons {
   display: grid;
   gap: 8px;
+  width: 100%;
 }
