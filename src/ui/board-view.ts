@@ -134,6 +134,28 @@ export class BoardView {
     );
   }
 
+  /** 行けないところへ行こうとしたときの、小さな首かしげ。 */
+  shakeCat(): void {
+    if (this.reduceMotion || typeof this.catEl.animate !== 'function') return;
+    const step = this.stepPx();
+    const base = this.catEl.style;
+    const r = Number(base.getPropertyValue('--r'));
+    const c = Number(base.getPropertyValue('--c'));
+    const x = c * step;
+    const y = r * step;
+    const d = step * 0.04;
+    this.catEl.animate(
+      [
+        { transform: `translate(${x}px, ${y}px)` },
+        { transform: `translate(${x - d}px, ${y}px)` },
+        { transform: `translate(${x + d}px, ${y}px)` },
+        { transform: `translate(${x - d}px, ${y}px)` },
+        { transform: `translate(${x}px, ${y}px)` },
+      ],
+      { duration: 260, easing: 'ease-in-out' },
+    );
+  }
+
   /** 経路アニメーションの途中で歩行が中断された（undo/やりなおし等）ときに呼ぶ。 */
   cancelCatAnimation(): void {
     if (typeof this.catEl.getAnimations === 'function') {

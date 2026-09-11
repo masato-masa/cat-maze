@@ -53,6 +53,15 @@ function swipe(el: HTMLElement): void {
   el.dispatchEvent(pointerEvent('pointerup', 160, 104));
 }
 
+/** (r,c) のマスをタップする。ポインタ操作の組み立ては既存の tap/swipe をそのまま使う。 */
+const tapCell = (r: number, c: number): void => tap(tile(r, c));
+/** (r,c) のマスをスワイプする（=そのマスのタイルを押す）。 */
+const swipeCell = (r: number, c: number): void => swipe(tile(r, c));
+
+/** walkCatThrough の Promise 解決を待つ。jsdom では即座に解決するが、
+ * .then() の実行はマイクロタスクの後になるため、テスト側でも 1 tick 待つ。 */
+const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+
 describe('対局画面', () => {
   it('知らないステージ ID には案内を出す', () => {
     open('nope');
@@ -193,5 +202,82 @@ describe('対局画面', () => {
     cleanup();
     key('ArrowRight');
     expect(q('.moves').textContent).toBe('0');
+  });
+});
+
+describe('猫の反応', () => {
+  it('行けないマスをタップすると悲しい顔になる', async () => {
+    open('W1-1');
+    const img = (): string => root.querySelector('.cat-img')!.getAttribute('src')!;
+    // W1-1 の (3,3) は猫から到達できない
+    tapCell(3, 3);
+    await flush();
+    expect(img()).toContain('sad');
+    cleanup();
+  });
+
+  it('歩ける先をタップしても悲しい顔にはならない', async () => {
+    open('W1-1');
+    const img = (): string => root.querySelector('.cat-img')!.getAttribute('src')!;
+    tapCell(1, 0); // 猫が今いるマス
+    await flush();
+    expect(img()).not.toContain('sad');
+    cleanup();
+  });
+
+  it('クリアすると嬉しい顔になる', async () => {
+    open('W1-1');
+    // W1-1 は 1 手（1 回のスライド）で解ける。ヒントの示すタイルを押す。
+    q<HTMLButtonElement>('.hint-btn').click();
+    const hinted = root.querySelector<HTMLElement>('.tile.hinted')!;
+    const r = Number(hinted.dataset['r']);
+    const c = Number(hinted.dataset['c']);
+    swipeCell(r, c);
+    // 「1 手で解ける」は手数のこと。スライドしただけでは猫はまだゴールの上に
+    // いないので、そこへ歩かせて初めて cleared になる。
+    const goal = root.querySelector<HTMLElement>('.tile-layer .tile[data-kind="goal"]')!;
+    tapCell(Number(goal.dataset['r']), Number(goal.dataset['c']));
+    await flush();
+    expect(root.querySelector('.cat-img')!.getAttribute('src')).toContain('happy');
+    cleanup();
+  });
+});
+
+describe('先行入力', () => {
+  // W3-1 で猫(2,2)から到達できるマスは (1,2)(2,2)(2,3)(3,1)(3,2)(3,3)(3,4)。
+  // (3,3)→(3,4) は隣接していて、歩いている最中に次のタップを重ねられる。
+  it('歩いている最中のタップも 1 つだけ覚えていて、歩き終わると実行される', async () => {
+    const walkToSpy = vi.spyOn(GameSession.prototype, 'walkTo');
+    open('W3-1');
+    tapCell(3, 3); // 歩行開始（まだ walking === true のまま同期的に戻る）
+    tapCell(3, 4); // 歩行中なので先行入力として覚える
+    await flush();
+    expect(walkToSpy.mock.calls).toEqual([[{ r: 3, c: 3 }], [{ r: 3, c: 4 }]]);
+    walkToSpy.mockRestore();
+    cleanup();
+  });
+
+  it('歩行中に 3 回タップしても、実行されるのは最初と最後の 1 つだけ', async () => {
+    const walkToSpy = vi.spyOn(GameSession.prototype, 'walkTo');
+    open('W3-1');
+    tapCell(3, 3); // 歩行開始
+    tapCell(3, 4); // 先行入力その 1（後で上書きされる）
+    tapCell(3, 1); // 先行入力その 2 で上書き。2 つ以上は覚えない
+    await flush();
+    expect(walkToSpy.mock.calls).toEqual([[{ r: 3, c: 3 }], [{ r: 3, c: 1 }]]);
+    walkToSpy.mockRestore();
+    cleanup();
+  });
+
+  it('歩行中に undo すると、覚えていた先行入力は捨てられる', async () => {
+    const walkToSpy = vi.spyOn(GameSession.prototype, 'walkTo');
+    open('W3-1');
+    tapCell(3, 3); // 歩行開始
+    tapCell(3, 4); // 先行入力として覚える
+    key('u'); // undo。覚えていた先行入力を捨てる
+    await flush();
+    expect(walkToSpy.mock.calls).toEqual([[{ r: 3, c: 3 }]]);
+    walkToSpy.mockRestore();
+    cleanup();
   });
 });

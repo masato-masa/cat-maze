@@ -89,13 +89,26 @@ export function renderGameScreen(
   const undoBtn = q<HTMLButtonElement>('.undo-btn');
 
   const view = new BoardView(boardRoot, session.current.board);
+  const cat = view.catSprite;
   const input = new InputManager(document);
   let recorded = false;
   let walking = false;
+  /** 歩いている最中に来たタップ。1 つだけ覚えて、歩き終わったら実行する。
+      2 つ以上覚えると、意図しない移動が連鎖する。 */
+  let queued: Pos | null = null;
+  /** draw() が最後に計算した到達可能なマス。盤が変わるたびに更新される。 */
+  let reach: Set<number> = reachableSet(session.current);
 
   function stopCatWalk(): void {
     view.cancelCatAnimation();
     walking = false;
+    queued = null;
+  }
+
+  /** 行けないマスをタップされたときの反応。今までは完全に無反応だった。 */
+  function refuse(): void {
+    cat.setMood('sad', 400);
+    view.shakeCat();
   }
 
   /** 猫の現在地から経路（Dir の列）をたどったマス目の座標列（始点を含む）を作る。 */
@@ -110,10 +123,14 @@ export function renderGameScreen(
     return out;
   }
 
+  let prevFish = session.current.fishTaken;
+  let prevCleared = session.current.cleared;
+
   function draw(): void {
     const s = session.current;
+    reach = reachableSet(s);
     view.render(s, {
-      reachable: reachableSet(s),
+      reachable: reach,
       slidable: slideTargets(s.board),
       hint,
     });
@@ -125,6 +142,10 @@ export function renderGameScreen(
     } else {
       fishLine.hidden = true;
     }
+    if (s.fishTaken > prevFish) cat.setMood('happy', 700);
+    if (s.cleared && !prevCleared) cat.setMood('happy');
+    prevFish = s.fishTaken;
+    prevCleared = s.cleared;
     if (s.cleared && !recorded) {
       recorded = true;
       const stars = starsFor(def!, s.moves);
@@ -156,23 +177,37 @@ export function renderGameScreen(
     draw();
   }
 
-  input.on('tap', (p) => {
-    if (p === undefined) return;
-    const target = p as Pos;
-    if (!message.hidden || walking) return;
+  /** タップされたマスへ歩く。到達領域外なら悲しい顔で反応するだけ。 */
+  function walkTo(target: Pos): void {
     const s = session.current;
-    // タップは常に歩行。到達領域外なら何もしない。
-    if (!reachableSet(s).has(idx(s.board, target.r, target.c))) return;
+    // タップは常に歩行。到達領域外なら反応だけ返す。
+    if (!reach.has(idx(s.board, target.r, target.c))) {
+      refuse();
+      return;
+    }
     const path = shortestPath(s, target);
     if (!path || path.length === 0) return;
     const waypoints = pathPositions(s.cat, path);
     walking = true;
     view.setCatAnimated(false);
     act(() => session.walkTo(target));
-    view.walkCatThrough(waypoints, WALK_STEP_MS).then(() => {
+    void view.walkCatThrough(waypoints, WALK_STEP_MS).then(() => {
       view.setCatAnimated(true);
       walking = false;
+      const next = queued;
+      queued = null;
+      if (next) walkTo(next);
     });
+  }
+
+  input.on('tap', (p) => {
+    if (p === undefined || !message.hidden) return;
+    const target = p as Pos;
+    if (walking) {
+      queued = target;
+      return;
+    }
+    walkTo(target);
   });
 
   input.on('walk', (d) => {
@@ -195,7 +230,10 @@ export function renderGameScreen(
     message.hidden = true;
     act(() => session.reset());
   });
-  input.on('back', () => deps.go({ screen: 'select' }));
+  input.on('back', () => {
+    queued = null;
+    deps.go({ screen: 'select' });
+  });
   input.on('hint', () => showHint());
   input.bindPointer(boardRoot);
 
@@ -205,7 +243,10 @@ export function renderGameScreen(
     draw();
   }
 
-  q('.back-btn').addEventListener('click', () => deps.go({ screen: 'select' }));
+  q('.back-btn').addEventListener('click', () => {
+    queued = null;
+    deps.go({ screen: 'select' });
+  });
   undoBtn.addEventListener('click', () => {
     stopCatWalk();
     act(() => session.undo());
