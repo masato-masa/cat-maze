@@ -5,7 +5,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  flex: 1 1 auto;
+  /* basis 0 にして高さを内容（.board の height）から切り離す。auto のままだと
+     .board の高さが --avail-h（.board-wrap の高さから算出）に依存し、
+     .board-wrap の高さが .board の内容量に依存する、という循環になる。 */
+  flex: 1 1 0;
   min-height: 0;
   padding: 8px 0;
 }
@@ -13,18 +16,25 @@
 .board {
   --gap: 6px;
   /* 1 マスの大きさは、横に入る大きさと縦に入る大きさの小さい方で決まる。
-     こうすると縦長・横長どちらの盤面でも画面からはみ出さない。 */
-  --avail-w: min(92vw, 452px);
-  /* 高さは残り全部を使う。46vh で止めていた頃は画面上部に大きな空白ができていた。
-     100% は .board-wrap の高さ（flex: 1 1 auto で決まる）を指すので、
-     盤のカードの上下 padding 16px × 2 を引いた分が中身に使える高さになる。 */
-  --avail-h: calc(100% - 32px);
+     こうすると縦長・横長どちらの盤面でも画面からはみ出さない。
+     min(92vw, 452px) はカードの外寸（にゃんどくの実測値）なので、
+     左右の padding 16px × 2 を引いた分が中身に使える幅になる。 */
+  --avail-w: calc(min(92vw, 452px) - 32px);
+  /* 中身に使える高さ。JS（board-view.ts）が .board-wrap の内寸を実測して
+     px で上書きする。ここの値は測定が終わるまでの一瞬と、ResizeObserver の
+     無い環境（jsdom 等）のための保険。
+     --step は下の transform: translate() の中で使われるため、ここに
+     パーセンテージを入れると（例: calc(100% - 32px)）、100% が要素自身の
+     ボックス基準で解決されて式ごと無効になり、translate が丸ごと
+     matrix(1,0,0,1,0,0) に潰れる。必ず絶対長（vh/px）にすること。 */
+  --avail-h: 60vh;
   --step: min(calc(var(--avail-w) / var(--cols)), calc(var(--avail-h) / var(--rows)));
   --cell: calc(var(--step) - var(--gap));
 
   position: relative;
-  width: calc(var(--step) * var(--cols));
-  height: calc(var(--step) * var(--rows));
+  /* 外寸 = 中身（step * cols/rows）+ 左右・上下の padding 16px × 2。 */
+  width: calc(var(--step) * var(--cols) + 32px);
+  height: calc(var(--step) * var(--rows) + 32px);
   background: var(--surface);
   border-radius: 16px;
   padding: 16px;

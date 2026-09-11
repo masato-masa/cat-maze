@@ -29,6 +29,8 @@ export class BoardView {
   private first = true;
   /** 減モーション設定。跳ねの高さをここで 0 にする。 */
   private reduceMotion: boolean;
+  /** .board-wrap の大きさが変わるたびに --avail-h を測り直す。jsdom には無い。 */
+  private resizeObserver: ResizeObserver | undefined;
 
   constructor(root: HTMLElement, board: Board) {
     this.root = root;
@@ -65,6 +67,32 @@ export class BoardView {
     this.cat = new CatSprite();
     this.catEl.append(this.cat.el);
     this.actorLayer.appendChild(this.catEl);
+
+    // 初回描画の前に一度同期的に測っておく（最初から正しい大きさで出したい）。
+    this.updateAvailHeight();
+    if (typeof ResizeObserver !== 'undefined' && root.parentElement) {
+      this.resizeObserver = new ResizeObserver(() => this.updateAvailHeight());
+      this.resizeObserver.observe(root.parentElement);
+    }
+  }
+
+  /** .board-wrap（root の親）の内寸を実測し、盤の中身に使える高さを
+   * --avail-h に px で書き込む。CSS 側の calc() は --step の中で
+   * transform: translate() に使われるため、ここは必ず絶対長（px）で
+   * 上書きする。パーセンテージのままだと式ごと無効になり、
+   * タイル・猫が全部 (0,0) へ潰れる。 */
+  private updateAvailHeight(): void {
+    const wrap = this.root.parentElement;
+    if (!wrap) return;
+    const cs = getComputedStyle(wrap);
+    const padTop = parseFloat(cs.paddingTop) || 0;
+    const padBottom = parseFloat(cs.paddingBottom) || 0;
+    // .board-wrap の内寸から、盤自身の上下 padding（16px × 2）を引いた分が
+    // 盤の中身（--step の計算）に使える高さ。
+    const avail = wrap.clientHeight - padTop - padBottom - 32;
+    // 極端に低いビューポート等で 0 以下になった場合は書き換えず、
+    // CSS 側のフォールバック値（60vh）に任せる。盤が消えるのを防ぐ。
+    if (avail > 0) this.root.style.setProperty('--avail-h', `${avail}px`);
   }
 
   private place(el: HTMLElement, r: number, c: number): void {
@@ -239,6 +267,7 @@ export class BoardView {
   }
 
   destroy(): void {
+    this.resizeObserver?.disconnect();
     this.cat.destroy();
     this.tiles.clear();
     this.root.innerHTML = '';
