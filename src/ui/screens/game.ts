@@ -304,7 +304,7 @@ export function renderGameScreen(
   });
   input.on('back', () => {
     stopCatWalk();
-    deps.go({ screen: 'select' });
+    deps.go({ screen: 'home' });
   });
   input.on('hint', () => showHint());
   input.bindPointer(boardRoot);
@@ -317,7 +317,7 @@ export function renderGameScreen(
 
   q('.back-btn').addEventListener('click', () => {
     stopCatWalk();
-    deps.go({ screen: 'select' });
+    deps.go({ screen: 'home' });
   });
   undoBtn.addEventListener('click', () => {
     stopCatWalk();

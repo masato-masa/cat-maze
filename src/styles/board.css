@@ -120,6 +120,22 @@
   box-shadow: none;
 }
 
+/* 固定マスの四隅に鋲を打つ。盤に留められていることを、色の濃淡ではなく
+   形で示す。道は中心から辺の中央へ伸びるので四隅は必ず空いていて、
+   鋲を置いても道と重ならない。形の手がかりなので明暗どちらでも効く。 */
+.tile-visual.tile-fixed::before {
+  content: '';
+  position: absolute;
+  inset: 14%;
+  border-radius: 2px;
+  background:
+    radial-gradient(circle at 0 0, var(--stud) 0 13%, transparent 14%),
+    radial-gradient(circle at 100% 0, var(--stud) 0 13%, transparent 14%),
+    radial-gradient(circle at 0 100%, var(--stud) 0 13%, transparent 14%),
+    radial-gradient(circle at 100% 100%, var(--stud) 0 13%, transparent 14%);
+  pointer-events: none;
+}
+
 .tile-road-svg {
   position: absolute;
   inset: 0;

@@ -200,10 +200,17 @@ describe('対局画面', () => {
     cleanup();
   });
 
-  it('もどるでステージ選択へ行く', () => {
+  it('もどるでホームへ行く', () => {
     open('W1-1');
     q('.back-btn').click();
-    expect(went).toEqual({ screen: 'select' });
+    expect(went).toEqual({ screen: 'home' });
+    cleanup();
+  });
+
+  it('Escape もホームへ行く（ボタンと同じ行き先）', () => {
+    open('W1-1');
+    key('Escape');
+    expect(went).toEqual({ screen: 'home' });
     cleanup();
   });
 
