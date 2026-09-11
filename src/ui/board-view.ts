@@ -28,11 +28,16 @@ export class BoardView {
   private width: number;
   private height: number;
   private first = true;
+  /** 減モーション設定。跳ねの高さをここで 0 にする。 */
+  private reduceMotion: boolean;
 
   constructor(root: HTMLElement, board: Board) {
     this.root = root;
     this.width = board.width;
     this.height = board.height;
+    this.reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
     root.className = 'board';
     root.style.setProperty('--cols', String(board.width));
@@ -97,19 +102,42 @@ export class BoardView {
     this.catEl.style.transition = on ? '' : 'none';
   }
 
+  /** 1 マス歩くたびに猫が跳ねる高さ（マスの大きさに対する割合）。 */
+  private static readonly HOP = 0.06;
+
   /**
    * 経路（始点を含む）に沿って猫を 1 本の連続したアニメーションで動かす。
    * 区間ごとに transition を打ち直す方式だと、境界で減速→再加速して
    * 止まって見えてしまうため、Web Animations API で経路全体を
    * 一定速度のキーフレームとして一度に再生する。
+   *
+   * マスとマスの中間に「跳ねの山」を 1 つ挟む。位置そのものは linear のまま
+   * なので歩く速さは一定で、上下の動きだけが歩幅を感じさせる。
    */
   walkCatThrough(path: Pos[], stepMs: number): Promise<void> {
+    if (path.length < 2) return Promise.resolve();
+
+    // 進行方向が西なら左を向く。縦にしか動かないときは向きを変えない。
+    const dc = path[path.length - 1]!.c - path[0]!.c;
+    if (dc !== 0) this.cat.faceWest(dc < 0);
+
     // jsdom など Web Animations API のない環境では即座に最終位置へ（place() 済み）。
-    if (path.length < 2 || typeof this.catEl.animate !== 'function') return Promise.resolve();
+    if (typeof this.catEl.animate !== 'function') return Promise.resolve();
+
     const step = this.stepPx();
-    const keyframes = path.map((p) => ({
-      transform: `translate(${p.c * step}px, ${p.r * step}px)`,
-    }));
+    const hop = this.reduceMotion ? 0 : step * BoardView.HOP;
+    const at = (p: Pos, lift: number): Keyframe => ({
+      transform: `translate(${p.c * step}px, ${p.r * step - lift}px)`,
+    });
+
+    const keyframes: Keyframe[] = [at(path[0]!, 0)];
+    for (let i = 1; i < path.length; i++) {
+      const a = path[i - 1]!;
+      const b = path[i]!;
+      keyframes.push(at({ r: (a.r + b.r) / 2, c: (a.c + b.c) / 2 }, hop));
+      keyframes.push(at(b, 0));
+    }
+
     const anim = this.catEl.animate(keyframes, {
       duration: stepMs * (path.length - 1),
       easing: 'linear',
