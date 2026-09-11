@@ -44,8 +44,13 @@ interface ToneOptions {
 }
 
 function tone({ freq, duration, type = 'sine', gain = 0.06, delay = 0, slideTo }: ToneOptions): void {
+  // muted の判定を先にする。audio() は AudioContext を必要になるまで作らない
+  // 遅延生成なので、消音中に呼ぶと無駄に AudioContext・GainNode・
+  // BiquadFilterNode を作って resume() まで走ってしまう。buzz() は既に
+  // 先に muted を見ているので、それと判定順を揃える。
+  if (muted) return;
   const ac = audio();
-  if (!ac || !master || muted) return;
+  if (!ac || !master) return;
   const t = ac.currentTime + delay;
   const osc = ac.createOscillator();
   const env = ac.createGain();

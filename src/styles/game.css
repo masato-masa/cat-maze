@@ -140,7 +140,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgb(246 239 228 / 0.66);
+  background: color-mix(in srgb, var(--bg) 66%, transparent);
   backdrop-filter: blur(3px);
   z-index: 10;
   animation: fade-in 200ms ease-out;

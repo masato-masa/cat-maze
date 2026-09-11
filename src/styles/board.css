@@ -77,24 +77,12 @@
 
 .grid-cell {
   border-radius: 8px;
-  background: transparent;
-  overflow: hidden;
-  transition: background var(--anim) ease-out;
 }
 
 /* 穴はタイルが無いマス。盤の地（白いカード）をそのまま見せ、
    内側の影だけで「開いている」ことを示す。 */
 .grid-cell.hole {
   box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.10);
-}
-
-.grid-cell::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: transparent;
-  transition: background var(--anim) ease-out;
-  pointer-events: none;
 }
 
 .tile {
@@ -285,9 +273,9 @@
   }
 }
 
-/* 初期描画ではアニメーションさせない */
+/* 初期描画ではアニメーションさせない。.grid-cell は transition を
+   持たなくなった（到達表示はタイル側の道の色に移った）ので対象外。 */
 .board.no-anim .tile,
-.board.no-anim .cat,
-.board.no-anim .grid-cell {
+.board.no-anim .cat {
   transition: none;
 }

@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderGameScreen } from '../../src/ui/screens/game.ts';
 import { GameSession } from '../../src/core/game.ts';
 import { BoardView } from '../../src/ui/board-view.ts';
+import { CatSprite } from '../../src/ui/cat-sprite.ts';
 import { ProgressStore, mapKV } from '../../src/ui/storage.ts';
 import type { Route } from '../../src/ui/router.ts';
 
@@ -294,6 +295,54 @@ describe('クリアのカード', () => {
     tapCell(Number(goal.dataset['r']), Number(goal.dataset['c']));
     const img = q('.message-card').querySelector('img')!;
     expect(img.getAttribute('src')).toContain('happy');
+    cleanup();
+  });
+});
+
+describe('クリア後のやりなおし', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // レビュー指摘（Important）: クリア時の cat.setMood('happy') は ms を渡していない
+  // ので恒久的になる。リセット系のハンドラ（retry-btn 等）はどれも mood を戻して
+  // いなかったため、リトライ後も猫が笑顔のまま固定され、scheduleBlink() は
+  // mood === 'idle' のときしかまばたきしないので、その画面を離れるまで一度も
+  // まばたきしなくなる欠陥だった。あわせて faceWest(false) も戻す必要がある。
+  it('やりなおすと笑顔で固定されず、向きも正面（東向き）に戻る', async () => {
+    const faceWestSpy = vi.spyOn(CatSprite.prototype, 'faceWest');
+    open('W1-1');
+    // W1-1 は 1 手（1 回のスライド）で解ける。ヒントの示すタイルを押してから
+    // ゴールへ歩かせて cleared にする。
+    q<HTMLButtonElement>('.hint-btn').click();
+    const hinted = root.querySelector<HTMLElement>('.tile.hinted')!;
+    swipeCell(Number(hinted.dataset['r']), Number(hinted.dataset['c']));
+    const goal = root.querySelector<HTMLElement>('.tile-layer .tile[data-kind="goal"]')!;
+    tapCell(Number(goal.dataset['r']), Number(goal.dataset['c']));
+    await flush();
+    const img = (): string => root.querySelector('.cat-img')!.getAttribute('src')!;
+    expect(img()).toContain('happy');
+
+    faceWestSpy.mockClear();
+    q('.retry-btn').click();
+    expect(img()).not.toContain('happy');
+    expect(faceWestSpy).toHaveBeenCalledWith(false);
+    cleanup();
+  });
+
+  it('「もういちど」ボタンでも同様に戻る', async () => {
+    open('W1-1');
+    q<HTMLButtonElement>('.hint-btn').click();
+    const hinted = root.querySelector<HTMLElement>('.tile.hinted')!;
+    swipeCell(Number(hinted.dataset['r']), Number(hinted.dataset['c']));
+    const goal = root.querySelector<HTMLElement>('.tile-layer .tile[data-kind="goal"]')!;
+    tapCell(Number(goal.dataset['r']), Number(goal.dataset['c']));
+    await flush();
+    const img = (): string => root.querySelector('.cat-img')!.getAttribute('src')!;
+    expect(img()).toContain('happy');
+
+    q('.again-btn').click();
+    expect(img()).not.toContain('happy');
     cleanup();
   });
 });

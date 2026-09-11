@@ -39,4 +39,51 @@ describe('効果音', () => {
     buzz(10);
     expect(vibrate).toHaveBeenCalledWith(10);
   });
+
+  // レビュー指摘（Minor）: tone() が audio()（AudioContext の遅延生成）を muted の
+  // チェックより先に呼んでいたため、消音中でも最初の操作で AudioContext・
+  // GainNode・BiquadFilterNode を作って resume() まで走ってしまっていた欠陥の
+  // 回帰テスト。iOS は同時に持てる AudioContext 数に上限があるので、消音中は
+  // 生成そのものを避けたい。このテストの最後に AudioContext をこの
+  // モジュール内で生成させるため、他のテストへの影響を避けてファイル末尾に置く。
+  it('消音中は AudioContext を作らない', () => {
+    const ctorSpy = vi.fn().mockImplementation(function (this: AudioContext) {
+      // connect() が常に自分自身を返す、どこまでも繋げられるダミーノード。
+      const chainable: Record<string, unknown> = {};
+      chainable['connect'] = () => chainable;
+      const param = (): unknown => ({
+        value: 0,
+        setValueAtTime: () => {},
+        exponentialRampToValueAtTime: () => {},
+      });
+      Object.assign(this, {
+        createGain: () => ({ ...chainable, gain: param() }),
+        createBiquadFilter: () => ({ ...chainable, type: '', frequency: param() }),
+        createOscillator: () => ({
+          ...chainable,
+          type: '',
+          frequency: param(),
+          start: () => {},
+          stop: () => {},
+        }),
+        currentTime: 0,
+        state: 'suspended',
+        resume: vi.fn(),
+        destination: {},
+      });
+    });
+    vi.stubGlobal('AudioContext', ctorSpy);
+    try {
+      setMuted(true);
+      play('walk');
+      expect(ctorSpy).not.toHaveBeenCalled();
+
+      setMuted(false);
+      play('walk');
+      expect(ctorSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+      setMuted(false);
+    }
+  });
 });

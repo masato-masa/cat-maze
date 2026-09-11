@@ -105,6 +105,21 @@ describe('効果音の繋ぎ', () => {
     cleanup();
   });
 
+  // レビュー指摘（Minor）: タップは refuse()（reach.has 判定）、やじるしキーも
+  // refuse()（canWalk 判定）を返すようになったのに、スワイプだけ canSlide が
+  // false のとき無言で終わっていた欠陥の回帰テスト。W1-1 の (1,3) は
+  // 固定タイル（ゴール）なので押せない。
+  it('押せないタイルへのスワイプも blocked 音・振動・悲しい顔で反応する', async () => {
+    open('W1-1');
+    const img = (): string => root.querySelector('.cat-img')!.getAttribute('src')!;
+    swipeCell(1, 3);
+    await flush();
+    expect(play).toHaveBeenCalledWith('blocked');
+    expect(buzz).toHaveBeenCalledWith(20);
+    expect(img()).toContain('sad');
+    cleanup();
+  });
+
   it('魚を取ると fish 音が鳴る', async () => {
     // W3-4 は catStart (2,2) から南へ 1 歩で魚 (3,2) に直接乗れる。
     open('W3-4');

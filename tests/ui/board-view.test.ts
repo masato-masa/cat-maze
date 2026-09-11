@@ -62,6 +62,49 @@ describe('猫の歩行アニメーション', () => {
     await v.walkCatThrough([{ r: 0, c: 1 }, { r: 1, c: 1 }], 120);
     expect(v.catSprite.el.style.getPropertyValue('--flip')).toBe('-1');
   });
+
+  // レビュー指摘（Critical）: stepPx() が this.root（.board）の
+  // getBoundingClientRect().width を盤の列数で割っていた。.board は
+  // box-sizing: border-box のもとで
+  // width: calc(var(--step) * var(--cols) + 32px) なので、root 自身の幅には
+  // 盤の padding 32px が含まれてしまい、1 マスあたり 32px/cols 分だけ
+  // 過大評価する。歩行中のキーフレーム座標がこの値で決まるため、歩行中は
+  // タイルの上からずれ、歩き終わり（anim.cancel() で CSS の正しい位置に
+  // 戻る瞬間）に目に見えてスナップしていた欠陥の回帰テスト。
+  //
+  // jsdom は getBoundingClientRect() が常に 0 を返すため実寸そのものは
+  // 測れない。ここでは「stepPx がどの要素を測っているか」を、
+  // .tile-layer と .board（root）に別々の幅を返すスタブを仕込んで確認する。
+  it('stepPx は .board ではなく .tile-layer の幅を測る（root には padding 32px が乗るため）', async () => {
+    const level: LevelDef = {
+      id: 'test-step',
+      name: 'テスト用',
+      width: 2,
+      height: 1,
+      layout: [['E', 'W']],
+      catStart: [0, 0],
+      optimalMoves: 1,
+      parMoves: 1,
+    };
+    const root = document.createElement('div');
+    document.body.append(root);
+    const v = new BoardView(root, createBoard(level));
+    const catEl = root.querySelector<HTMLElement>('.cat')!;
+    const tileLayer = root.querySelector<HTMLElement>('.tile-layer')!;
+    const get = captureKeyframes(catEl);
+
+    // tile-layer（内寸）は 100px = 2 マス分 → 1 マス 50px。
+    // root（外寸）はその + padding 32px 分の 132px（誤って使うと 1 マス 66px
+    // になり、想定とは違う値が出る）。
+    vi.spyOn(tileLayer, 'getBoundingClientRect').mockReturnValue({ width: 100 } as unknown as DOMRect);
+    vi.spyOn(root, 'getBoundingClientRect').mockReturnValue({ width: 132 } as unknown as DOMRect);
+
+    await v.walkCatThrough([{ r: 0, c: 0 }, { r: 0, c: 1 }], 120);
+    const kfs = get();
+    // 最終キーフレームは (r:0, c:1) の位置。tile-layer 基準の step(50px) なら
+    // translate(50px, 0px)。root 基準（誤り）だと translate(66px, 0px) になる。
+    expect(kfs[kfs.length - 1]!.transform).toBe('translate(50px, 0px)');
+  });
 });
 
 describe('render のタイル差分更新', () => {

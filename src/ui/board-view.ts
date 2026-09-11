@@ -101,9 +101,17 @@ export class BoardView {
   }
 
   /** 1 マスの実ピクセルサイズ。--step は viewport 単位を含む calc() なので、
-   * カスタムプロパティの文字列をパースせず実測する。 */
+   * カスタムプロパティの文字列をパースせず実測する。
+   * `this.root`（.board）は box-sizing: border-box のもとで
+   * `width: calc(var(--step) * var(--cols) + 32px)` なので、root 自身の
+   * 幅には盤の padding 32px が含まれてしまい、割ると 1 マスあたり
+   * `32px / cols` 分だけ過大評価してしまう（歩行アニメがタイルの位置から
+   * ずれてスナップする欠陥だった）。.tile-layer は `inset: 16px` で
+   * ちょうど中身の幅と一致するので、そちらを測る。padding 分を
+   * ハードコードして引く形にすると CSS 側の padding が変わったときに
+   * また同じ罠を踏むので避ける。 */
   private stepPx(): number {
-    return this.root.getBoundingClientRect().width / this.width;
+    return this.tileLayer.getBoundingClientRect().width / this.width;
   }
 
   /** 猫の表情と向き。ゲーム画面が状態の変化に合わせて呼ぶ。 */
@@ -203,7 +211,6 @@ export class BoardView {
       const c = Number(cell.dataset['c']);
       const k = idx(b, r, c);
       cell.classList.toggle('hole', b.cells[k] == null);
-      cell.classList.toggle('reachable', opts.reachable.has(k));
     }
 
     const seen = new Set<number>();

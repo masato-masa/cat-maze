@@ -56,20 +56,6 @@ function fishSvg(): string {
   );
 }
 
-export function tileSvg(tile: Tile): string {
-  const wrapClass = ['tile-visual', tile.fixed ? 'tile-fixed' : ''].filter(Boolean).join(' ');
-  const parts: string[] = [];
-
-  const road = roadSvg(tile.conn);
-  if (road) {
-    parts.push(`<svg class="tile-road-svg" viewBox="0 0 100 100" aria-hidden="true">${road}</svg>`);
-  }
-  if (tile.kind === 'goal') parts.push(houseSvg());
-  if (tile.fish) parts.push(fishSvg());
-
-  return `<div class="${wrapClass}">${parts.join('')}</div>`;
-}
-
 /**
  * タイルの DOM を組む。初回だけ呼ぶ。
  *

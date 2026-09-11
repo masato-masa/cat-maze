@@ -181,6 +181,14 @@ export function renderGameScreen(
       buzz([40, 60, 40]);
       cat.setMood('happy');
     }
+    // クリア状態から戻った（やりなおし等）ときは、笑顔で固定されたまま
+    // （setMood('happy') は ms 無しなので恒久的）になるのを直す。
+    // 'idle' に戻さないと、mood が 'idle' のときしか回らない
+    // scheduleBlink() のせいで、この画面を離れるまで一度もまばたきしない。
+    if (!s.cleared && prevCleared) {
+      cat.setMood('idle');
+      cat.faceWest(false);
+    }
     prevMoves = s.moves;
     prevFish = s.fishTaken;
     prevCleared = s.cleared;
@@ -283,7 +291,10 @@ export function renderGameScreen(
   input.on('slide', (p) => {
     if (!message.hidden || walking || p === undefined) return;
     const target = p as Pos;
+    // タップ・やじるしキーと対称に、押せないマスへのスワイプにも
+    // 「行けない」反応（音・振動・悲しい顔）を返す。
     if (canSlide(session.current.board, target)) act(() => session.slide(target));
+    else refuse();
   });
   input.on('undo', () => {
     if (!message.hidden) return;
