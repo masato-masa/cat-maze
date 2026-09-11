@@ -76,6 +76,7 @@ describe('効果音の繋ぎ', () => {
     vi.clearAllMocks();
     key('ArrowRight'); // 歩行のみ。手数は増えない
     expect(play).not.toHaveBeenCalledWith('slide');
+    expect(play).not.toHaveBeenCalledWith('blocked'); // 通れる方向なので「行けない」反応は出ない
     cleanup();
   });
 
@@ -85,6 +86,22 @@ describe('効果音の繋ぎ', () => {
     await flush();
     expect(play).toHaveBeenCalledWith('blocked');
     expect(buzz).toHaveBeenCalledWith(20);
+    cleanup();
+  });
+
+  // レビュー指摘: 画面の操作説明が案内する「やじるし ねこが あるく」の経路で
+  // 壁にぶつかっても、タップと違って reach の事前チェックが無く、
+  // session.walk() が同一オブジェクトを返すだけで draw() の差分検出（primitive
+  // 値の比較）には引っかからないため、無音・無振動・無反応だった欠陥の回帰テスト。
+  it('やじるしキーで壁にぶつかると blocked 音・振動・悲しい顔が出る', async () => {
+    // W1-1 の catStart (1,0) は初期状態だと四方すべて壁（東は穴)。
+    open('W1-1');
+    const img = (): string => root.querySelector('.cat-img')!.getAttribute('src')!;
+    key('ArrowUp');
+    await flush();
+    expect(play).toHaveBeenCalledWith('blocked');
+    expect(buzz).toHaveBeenCalledWith(20);
+    expect(img()).toContain('sad');
     cleanup();
   });
 
@@ -113,14 +130,15 @@ describe('効果音の繋ぎ', () => {
     cleanup();
   });
 
-  it('歩行は 1 マスごとに walk 音を刻む', async () => {
+  it('歩行は 1 マスごとに walk 音を刻む（1 マス目は同期、以降は setTimeout）', async () => {
     vi.useFakeTimers();
     try {
       // W3-1: 猫(2,2)から(3,3)へは 2 歩（(3,2) を経由）。
       open('W3-1');
       tapCell(3, 3);
-      await vi.advanceTimersByTimeAsync(0);
-      expect(play).toHaveBeenCalledWith('walk');
+      // レビュー指摘: 最初の一音までタイマーを挟むと AudioContext の生成が
+      // ジェスチャのコールスタック外になり、Safari 系の autoplay ポリシーで
+      // 無音になる恐れがある。1 マス目は setTimeout を待たず同期的に鳴る。
       const afterFirst = vi.mocked(play).mock.calls.filter((c) => c[0] === 'walk').length;
       expect(afterFirst).toBe(1);
       await vi.advanceTimersByTimeAsync(120);
@@ -136,13 +154,32 @@ describe('効果音の繋ぎ', () => {
     vi.useFakeTimers();
     try {
       open('W3-1');
-      tapCell(3, 3); // 2 歩の歩行。walk 音のタイマーは 0ms と 120ms に積まれる
-      await vi.advanceTimersByTimeAsync(0); // 0ms の分だけ鳴らす
+      tapCell(3, 3); // 2 歩の歩行。1 歩目は同期、2 歩目は 120ms 後のタイマー
       const before = vi.mocked(play).mock.calls.filter((c) => c[0] === 'walk').length;
       cleanup(); // 120ms 分が鳴る前に画面を離れる
       vi.advanceTimersByTime(1000);
       const after = vi.mocked(play).mock.calls.filter((c) => c[0] === 'walk').length;
       expect(after).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // レビュー指摘（Minor）: undo/retry/restart は stopCatWalk() を直接呼ぶが、
+  // 「もどる」だけは main.ts の router.onChange 経由の cleanup() 頼みだった。
+  // hashchange は非同期なので、歩行中に「もどる」を押した直後は 0ms 遅延の
+  // walk 音タイマーが cleanup より先に発火しうる理論上の競合窓があった。
+  it('歩行中に「もどる」（Escape）を押すと、残っている歩行音のタイマーも止まる', () => {
+    vi.useFakeTimers();
+    try {
+      open('W3-1');
+      tapCell(3, 3); // 2 歩の歩行。2 歩目は 120ms 後のタイマー
+      const before = vi.mocked(play).mock.calls.filter((c) => c[0] === 'walk').length;
+      key('Escape'); // 'back'。cleanup() を待たずに自分で歩行を止める
+      vi.advanceTimersByTime(1000);
+      const after = vi.mocked(play).mock.calls.filter((c) => c[0] === 'walk').length;
+      expect(after).toBe(before);
+      cleanup();
     } finally {
       vi.useRealTimers();
     }

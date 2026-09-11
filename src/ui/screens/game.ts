@@ -1,5 +1,5 @@
 import { canSlide, slideTargets } from '../../core/slide.ts';
-import { GameSession, reachableSet, shortestPath } from '../../core/game.ts';
+import { GameSession, canWalk, reachableSet, shortestPath } from '../../core/game.ts';
 import { starsFor } from '../../core/rules.ts';
 import { idx } from '../../core/board.ts';
 import { getLevel, nextLevelId, worldOf } from '../../levels/index.ts';
@@ -219,8 +219,14 @@ export function renderGameScreen(
     // 歩行音だけは 1 マスずつ鳴らす。移動そのものは 1 本のアニメーションなので、
     // 経路の長さと 1 マスあたりの時間から刻む。画面を離れる・歩行が中断される
     // ときは stopCatWalk() がこのタイマーを止める。
+    // 1 マス目だけは setTimeout を通さず同期的に鳴らす。tap→walkTo はユーザー
+    // 操作のコールスタック内で呼ばれているので、ここで tone() まで届けば
+    // AudioContext の生成・resume() がジェスチャ起因になる。setTimeout(…, 0)
+    // 経由だとマクロタスクに落ちてしまい、Safari 系の厳しい autoplay ポリシーで
+    // 最初の一音が鳴らない恐れがある。
     clearWalkTimers();
-    for (let i = 1; i < waypoints.length; i++) {
+    play('walk');
+    for (let i = 2; i < waypoints.length; i++) {
       walkTimers.push(window.setTimeout(() => play('walk'), (i - 1) * WALK_STEP_MS));
     }
     void view.walkCatThrough(waypoints, WALK_STEP_MS).then(() => {
@@ -246,6 +252,12 @@ export function renderGameScreen(
 
   input.on('walk', (d) => {
     if (!message.hidden || walking || d === undefined) return;
+    // タップの歩行不可（reach.has の事前チェック）と対称にする。やじるしキーで
+    // 壁に向かっても、タップと同じ「行けない」反応（音・振動・悲しい顔）を返す。
+    if (!canWalk(session.current, d as Dir)) {
+      refuse();
+      return;
+    }
     act(() => session.walk(d as Dir));
   });
   input.on('slide', (p) => {
@@ -265,7 +277,7 @@ export function renderGameScreen(
     act(() => session.reset());
   });
   input.on('back', () => {
-    queued = null;
+    stopCatWalk();
     deps.go({ screen: 'select' });
   });
   input.on('hint', () => showHint());
@@ -278,7 +290,7 @@ export function renderGameScreen(
   }
 
   q('.back-btn').addEventListener('click', () => {
-    queued = null;
+    stopCatWalk();
     deps.go({ screen: 'select' });
   });
   undoBtn.addEventListener('click', () => {
