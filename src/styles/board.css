@@ -81,8 +81,10 @@
 
 /* 穴はタイルが無いマス。盤の地（白いカード）をそのまま見せ、
    内側の影だけで「開いている」ことを示す。 */
+/* 穴はタイルが無いマス。盤に空いた窪みとして、固定タイルより一段暗く落とす。 */
 .grid-cell.hole {
-  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.10);
+  background: var(--hole-well);
+  box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.22);
 }
 
 .tile {
@@ -95,6 +97,13 @@
   cursor: pointer;
 }
 
+/* 盤の上には 3 段の高さがある。
+     動かせるピース = 落ち影で浮いている（盤に置いてある駒）
+     固定ピース     = 影が無く平ら（盤に埋め込まれている）
+     穴             = 内側の影で凹んでいる（.grid-cell.hole）
+   色の濃淡だけで分けていた頃は、--tile と --tile-fixed の差がわずかで
+   見分けがつかなかった。高さなら明暗どちらのテーマでも同じように効く。
+   タイル同士には 6px の隙間があるので、落ち影がそこに落ちて浮きが分かる。 */
 .tile-visual {
   position: relative;
   display: block;
@@ -103,10 +112,12 @@
   border-radius: 8px;
   overflow: hidden;
   background: var(--tile);
+  box-shadow: var(--tile-lift);
 }
 
 .tile-visual.tile-fixed {
   background: var(--tile-fixed);
+  box-shadow: none;
 }
 
 .tile-road-svg {
