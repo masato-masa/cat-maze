@@ -237,9 +237,23 @@ describe('プレイ画面のレイアウト', () => {
     cleanup();
   });
 
-  it('さかなの表示はヘッダの中に入る', () => {
+  it('さかなの表示はステージタイトルの下に入る', () => {
     open('W3-1');
-    expect(q('.game-header').querySelector('.fish-pill')).not.toBeNull();
+    // ヘッダ右側に手数と並べていた頃は 3 つが横に詰まっていた。
+    // タイトルの下へ移して、左に積む形にしている。
+    expect(q('.level-title').querySelector('.fish-pill')).not.toBeNull();
+    cleanup();
+  });
+
+  it('ひとことは出さない', () => {
+    open('W1-1'); // hint を持つステージ
+    expect(root.querySelector('.hint-line')).toBeNull();
+    cleanup();
+  });
+
+  it('音量ボタンは持たない', () => {
+    open('W1-1');
+    expect(root.querySelector('.mute-btn')).toBeNull();
     cleanup();
   });
 });

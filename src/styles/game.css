@@ -5,24 +5,19 @@
   overflow: hidden;
 }
 
+/* 上端で揃える。左の列は魚の有無で 2 行にも 3 行にもなるが、
+   中央揃えにすると行数で手数の位置が動いてしまう。 */
 .game-header {
   display: grid;
   grid-template-columns: 44px 1fr auto;
-  align-items: center;
+  align-items: start;
   gap: 8px;
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.mute-btn {
-  font-size: 1.3rem;
-}
-
 .fish-pill {
+  /* 親が縦並びなので、伸びないように自分の幅で止める */
+  align-self: flex-start;
+  margin-top: 4px;
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
@@ -35,9 +30,12 @@
   white-space: nowrap;
 }
 
+/* ステージ名の下に魚を積む。以前は手数・魚・音量を右に横並びにしていて、
+   タイトルと合わせて画面の上が詰まって見えていた。 */
 .level-title {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   line-height: 1.2;
   min-width: 0;
 }
@@ -71,14 +69,6 @@
 .moves-label {
   font-size: 0.7rem;
   color: var(--ink-soft);
-}
-
-.hint-line {
-  margin: 2px 0 0;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  min-height: 1.2em;
 }
 
 .controls-line {

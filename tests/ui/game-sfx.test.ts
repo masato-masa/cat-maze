@@ -3,7 +3,6 @@
 // 効果音の「繋ぎ」だけを確かめるテスト。GameSession はイベントを発火しない
 // 純粋な状態遷移なので、screens/game.ts が前後の状態を比べて鳴らしている
 // ことを、sfx モジュールをモックして呼び出しの有無で確認する。
-// isMuted / setMuted は実装のまま使い、localStorage 連携ごと確かめる。
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderGameScreen } from '../../src/ui/screens/game.ts';
 import { play, buzz } from '../../src/ui/sfx.ts';
@@ -201,23 +200,3 @@ describe('効果音の繋ぎ', () => {
   });
 });
 
-describe('消音トグル', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('クリックのたびにアイコンと保存状態が切り替わる', () => {
-    open('W1-1');
-    const muteBtn = q<HTMLButtonElement>('.mute-btn');
-    expect(muteBtn.textContent).toBe('🔊');
-    expect(muteBtn.getAttribute('aria-pressed')).toBe('false');
-    muteBtn.click();
-    expect(muteBtn.textContent).toBe('🔇');
-    expect(muteBtn.getAttribute('aria-pressed')).toBe('true');
-    expect(localStorage.getItem('cat-maze:muted')).toBe('1');
-    muteBtn.click();
-    expect(muteBtn.textContent).toBe('🔊');
-    expect(localStorage.getItem('cat-maze:muted')).toBeNull();
-    cleanup();
-  });
-});

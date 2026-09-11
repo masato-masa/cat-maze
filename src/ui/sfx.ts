@@ -1,18 +1,11 @@
 // 効果音。音声ファイルを持たず WebAudio で合成する。
 // 読み込みゼロ・容量ゼロ・遅延ゼロ。にゃんどくの src/core/sfx.ts と同じ作法。
-const MUTE_KEY = 'cat-maze:muted';
+//
+// 消音の仕組みは持たない。音量の上げ下げと消音は端末側に用意されているので、
+// アプリ内に二重に置かない。そのぶん音は控えめ（ピーク 0.25 程度）にしてある。
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
-let muted = readMuted();
-
-function readMuted(): boolean {
-  try {
-    return localStorage.getItem(MUTE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
 
 function audio(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -44,11 +37,6 @@ interface ToneOptions {
 }
 
 function tone({ freq, duration, type = 'sine', gain = 0.06, delay = 0, slideTo }: ToneOptions): void {
-  // muted の判定を先にする。audio() は AudioContext を必要になるまで作らない
-  // 遅延生成なので、消音中に呼ぶと無駄に AudioContext・GainNode・
-  // BiquadFilterNode を作って resume() まで走ってしまう。buzz() は既に
-  // 先に muted を見ているので、それと判定順を揃える。
-  if (muted) return;
   const ac = audio();
   if (!ac || !master) return;
   const t = ac.currentTime + delay;
@@ -90,22 +78,7 @@ export function play(name: SfxName): void {
   }
 }
 
-export function isMuted(): boolean {
-  return muted;
-}
-
-export function setMuted(on: boolean): void {
-  muted = on;
-  try {
-    if (on) localStorage.setItem(MUTE_KEY, '1');
-    else localStorage.removeItem(MUTE_KEY);
-  } catch {
-    // プライベートブラウズなどで書けなくても、その回の設定は効く
-  }
-}
-
 /** 触覚。対応していない環境では何も起きない。 */
 export function buzz(pattern: number | number[]): void {
-  if (muted) return;
   navigator.vibrate?.(pattern);
 }

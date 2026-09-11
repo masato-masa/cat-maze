@@ -11,7 +11,7 @@ import { BoardView } from '../board-view.ts';
 import { CatSprite } from '../cat-sprite.ts';
 import { InputManager } from '../input.ts';
 import { iconHint, iconRetry, iconUndo } from '../icons.ts';
-import { buzz, isMuted, play, setMuted } from '../sfx.ts';
+import { buzz, play } from '../sfx.ts';
 import type { Route } from '../router.ts';
 import type { ProgressStore } from '../storage.ts';
 
@@ -45,18 +45,13 @@ export function renderGameScreen(
         <div class="level-title">
           <span class="level-id">${world ? world.name : ''} ${def.id}</span>
           <span class="level-name">${def.name}</span>
-        </div>
-        <div class="header-right">
-          <div class="move-counter">
-            <span class="moves">0</span>
-            <span class="moves-label">さいたん ${def.optimalMoves}</span>
-          </div>
           <span class="fish-pill" hidden><span class="fish-count"></span></span>
-          <button class="icon-btn mute-btn" type="button" aria-label="おと"></button>
+        </div>
+        <div class="move-counter">
+          <span class="moves">0</span>
+          <span class="moves-label">さいたん ${def.optimalMoves}</span>
         </div>
       </header>
-
-      <p class="hint-line">${def.hint ?? ''}</p>
 
       <div class="board-wrap"><div class="board-root"></div></div>
 
@@ -346,17 +341,6 @@ export function renderGameScreen(
     act(() => session.reset());
   });
   q('.select-btn').addEventListener('click', () => deps.go({ screen: 'select' }));
-
-  const muteBtn = q<HTMLButtonElement>('.mute-btn');
-  function paintMute(): void {
-    muteBtn.textContent = isMuted() ? '🔇' : '🔊';
-    muteBtn.setAttribute('aria-pressed', String(isMuted()));
-  }
-  muteBtn.addEventListener('click', () => {
-    setMuted(!isMuted());
-    paintMute();
-  });
-  paintMute();
 
   draw();
 
