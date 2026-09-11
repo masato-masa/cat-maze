@@ -196,7 +196,9 @@ export function renderGameScreen(
       walking = false;
       const next = queued;
       queued = null;
-      if (next) walkTo(next);
+      // クリア済みなら先行入力は捨てる。到達可能性(reach)だけでなく、
+      // 「今はもうタップを受け付けない」という上位の状態も見る必要がある。
+      if (next && message.hidden) walkTo(next);
     });
   }
 

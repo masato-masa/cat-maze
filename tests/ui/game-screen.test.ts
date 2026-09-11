@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderGameScreen } from '../../src/ui/screens/game.ts';
 import { GameSession } from '../../src/core/game.ts';
 import { BoardView } from '../../src/ui/board-view.ts';
@@ -31,6 +31,15 @@ const key = (k: string): void => {
 };
 const tile = (r: number, c: number): HTMLElement =>
   root.querySelector<HTMLElement>(`.tile-layer [data-r="${r}"][data-c="${c}"]`)!;
+
+/** 猫の見た目上の位置（`.cat` の `--r`/`--c`）。歩行の結果を DOM から直接確かめる。 */
+const catPos = (): { r: number; c: number } => {
+  const el = q<HTMLElement>('.cat');
+  return {
+    r: Number(el.style.getPropertyValue('--r')),
+    c: Number(el.style.getPropertyValue('--c')),
+  };
+};
 
 /** jsdom には PointerEvent が無いので、必要なプロパティだけ持つイベントを作る。 */
 function pointerEvent(type: string, x: number, y: number): Event {
@@ -244,6 +253,12 @@ describe('猫の反応', () => {
 });
 
 describe('先行入力', () => {
+  // spy の後始末をテスト本体の末尾に置くと、assert で落ちたときに後続のテストへ
+  // 漏れる。afterEach に寄せて必ず戻す。
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   // W3-1 で猫(2,2)から到達できるマスは (1,2)(2,2)(2,3)(3,1)(3,2)(3,3)(3,4)。
   // (3,3)→(3,4) は隣接していて、歩いている最中に次のタップを重ねられる。
   it('歩いている最中のタップも 1 つだけ覚えていて、歩き終わると実行される', async () => {
@@ -253,7 +268,8 @@ describe('先行入力', () => {
     tapCell(3, 4); // 歩行中なので先行入力として覚える
     await flush();
     expect(walkToSpy.mock.calls).toEqual([[{ r: 3, c: 3 }], [{ r: 3, c: 4 }]]);
-    walkToSpy.mockRestore();
+    // 呼び出し履歴だけでなく、猫が実際にそこへ着いたことも見える形で確かめる。
+    expect(catPos()).toEqual({ r: 3, c: 4 });
     cleanup();
   });
 
@@ -265,7 +281,9 @@ describe('先行入力', () => {
     tapCell(3, 1); // 先行入力その 2 で上書き。2 つ以上は覚えない
     await flush();
     expect(walkToSpy.mock.calls).toEqual([[{ r: 3, c: 3 }], [{ r: 3, c: 1 }]]);
-    walkToSpy.mockRestore();
+    // 猫が (3,4)（捨てられた先行入力の行き先）ではなく (3,1)（最後の先行入力の
+    // 行き先）に居ることを、呼び出し履歴とは別に位置でも確かめる。
+    expect(catPos()).toEqual({ r: 3, c: 1 });
     cleanup();
   });
 
@@ -277,7 +295,50 @@ describe('先行入力', () => {
     key('u'); // undo。覚えていた先行入力を捨てる
     await flush();
     expect(walkToSpy.mock.calls).toEqual([[{ r: 3, c: 3 }]]);
-    walkToSpy.mockRestore();
+    // 猫は (3,4) へは進まず、undo 前の (3,3) のまま(スライド履歴が無いので
+    // undo 自体は何も戻さない)。
+    expect(catPos()).toEqual({ r: 3, c: 3 });
+    cleanup();
+  });
+
+  // レビュー指摘: 先行入力の再実行(walkTo() 内 `if (next) walkTo(next);`)が
+  // reach しか再検証しておらず、「今はもうタップを受け付けない」という
+  // 上位の状態(message.hidden)を見ていなかった。歩行中にタップが積まれ、
+  // その歩行が(何らかの理由で)クリアを引き起こした場合、カードが出た裏で
+  // 積まれた行き先へもう一度歩いてしまう欠陥だった。
+  //
+  // 実際の操作だけでこの状態を組み立てようとすると、
+  // 「先行入力として積める(= message.hidden が true)」ことと
+  // 「クリア済みである(= message.hidden が false)」ことは常にどちらか
+  // 一方でしかなく、タップの経路だけでは両立できない
+  // (状態を変える手段はすべて `act()` を通り、`act()` は同期的に
+  // `draw()` まで終えるため)。そこで、歩行アニメーションの完了を
+  // モックして「その歩行の完了時点で、すでにカードが出ている」という
+  // 状況を直接作り、再実行がそれを見ているかどうかを確かめる。
+  it('先行入力の再実行前に「クリア!」カードが出ていたら、積んだ行き先へは歩かない', async () => {
+    const walkToSpy = vi.spyOn(GameSession.prototype, 'walkTo');
+    open('W3-1');
+    // 最初の歩行(3,3)の完了だけ、実際のアニメーションの代わりに
+    // 「カードが出ている」状態を作ってから解決させる。
+    // 「message.hidden = false」を同期的に行うと、2 回目の tapCell 自体が
+    // 直接タップの経路（204 行目の `!message.hidden` ガード）で弾かれてしまい、
+    // 先行入力として積む前に終わってしまう。マイクロタスクを 1 つ挟んで、
+    // 「(3,4) を先行入力として積んだ後、最初の歩行の完了時点ではもう
+    // カードが出ている」という順番を再現する。
+    const animSpy = vi
+      .spyOn(BoardView.prototype, 'walkCatThrough')
+      .mockImplementationOnce(() =>
+        Promise.resolve().then(() => {
+          q<HTMLElement>('.game-message').hidden = false;
+        }),
+      );
+    tapCell(3, 3); // 歩行開始
+    tapCell(3, 4); // 歩行中なので先行入力として覚える
+    await flush();
+    // 積んだ (3,4) へは再実行されない。最初の歩行の 1 回だけ。
+    expect(walkToSpy.mock.calls).toEqual([[{ r: 3, c: 3 }]]);
+    expect(catPos()).toEqual({ r: 3, c: 3 });
+    animSpy.mockRestore();
     cleanup();
   });
 });
