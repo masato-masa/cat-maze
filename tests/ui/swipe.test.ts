@@ -8,24 +8,14 @@ afterEach(() => {
   im = null;
 });
 
-/** jsdom には TouchEvent が無いので、必要なプロパティだけ持つイベントを作る。 */
-function touch(type: string, points: { x: number; y: number; target?: EventTarget }[], changed = points): Event {
+/** jsdom には PointerEvent が無いので、必要なプロパティだけ持つイベントを作る。 */
+function pointer(type: string, x: number, y: number, pointerId = 1): Event {
   const ev = new Event(type, { bubbles: true, cancelable: true });
-  const list = points.map((p) => ({ clientX: p.x, clientY: p.y, target: p.target ?? null }));
-  Object.defineProperty(ev, 'touches', { value: list });
-  Object.defineProperty(ev, 'changedTouches', {
-    value: changed.map((p) => ({ clientX: p.x, clientY: p.y, target: p.target ?? null })),
-  });
+  Object.defineProperty(ev, 'clientX', { value: x });
+  Object.defineProperty(ev, 'clientY', { value: y });
+  Object.defineProperty(ev, 'isPrimary', { value: true });
+  Object.defineProperty(ev, 'pointerId', { value: pointerId });
   return ev;
-}
-
-function swipe(
-  el: HTMLElement,
-  from: { x: number; y: number; target?: EventTarget },
-  to: { x: number; y: number },
-): void {
-  el.dispatchEvent(touch('touchstart', [from]));
-  el.dispatchEvent(touch('touchend', [], [to]));
 }
 
 function cell(r: number, c: number): HTMLElement {
@@ -38,56 +28,91 @@ function cell(r: number, c: number): HTMLElement {
 function setup(): {
   board: HTMLElement;
   child: HTMLElement;
+  tap: ReturnType<typeof vi.fn>;
   slide: ReturnType<typeof vi.fn>;
-  click: ReturnType<typeof vi.fn>;
 } {
   const board = document.createElement('div');
   const child = cell(1, 2);
   board.append(child);
   document.body.append(board);
+  const tap = vi.fn();
   const slide = vi.fn();
-  const click = vi.fn();
-  board.addEventListener('click', click);
   im = new InputManager(document);
+  im.on('tap', tap);
   im.on('slide', slide);
-  im.bindSwipe(board);
-  return { board, child, slide, click };
+  im.bindPointer(board);
+  return { board, child, tap, slide };
 }
 
-describe('スワイプ', () => {
-  it('指を下ろしたマスの位置でパネルを押す', () => {
-    const { child, slide } = setup();
-    swipe(child, { x: 100, y: 100, target: child }, { x: 160, y: 104 });
+function drag(el: HTMLElement, from: [number, number], to: [number, number]): void {
+  el.dispatchEvent(pointer('pointerdown', from[0], from[1]));
+  el.dispatchEvent(pointer('pointerup', to[0], to[1]));
+}
+
+describe('ポインタ操作', () => {
+  it('7px を超えて動かしたらスライド。指を下ろしたマスが伝わる', () => {
+    const { child, tap, slide } = setup();
+    drag(child, [100, 100], [160, 104]);
     expect(slide).toHaveBeenCalledWith({ r: 1, c: 2 });
+    expect(tap).not.toHaveBeenCalled();
   });
 
   it('向きに関わらず、押したマスが伝わる', () => {
     const { child, slide } = setup();
-    swipe(child, { x: 100, y: 100, target: child }, { x: 104, y: 160 });
+    drag(child, [100, 100], [104, 160]);
     expect(slide).toHaveBeenCalledWith({ r: 1, c: 2 });
   });
 
-  it('ほとんど動いていなければ何もしない（タップとして扱う）', () => {
-    const { child, slide } = setup();
-    swipe(child, { x: 100, y: 100, target: child }, { x: 105, y: 103 });
+  it('7px 以内ならタップ。歩行として伝わる', () => {
+    const { child, tap, slide } = setup();
+    drag(child, [100, 100], [104, 103]);
+    expect(tap).toHaveBeenCalledWith({ r: 1, c: 2 });
     expect(slide).not.toHaveBeenCalled();
   });
 
-  // スワイプのあとブラウザが click を出すことがある。
-  // そのまま通すと「歩く」と「スライド」が二重に起きてしまう。
-  it('スワイプ直後の click は握りつぶす', () => {
-    const { child, slide, click } = setup();
-    swipe(child, { x: 100, y: 100, target: child }, { x: 160, y: 104 });
-    expect(slide).toHaveBeenCalledWith({ r: 1, c: 2 });
-    child.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    expect(click).not.toHaveBeenCalled();
+  it('ちょうど 7px はタップ', () => {
+    const { child, tap } = setup();
+    drag(child, [100, 100], [107, 100]);
+    expect(tap).toHaveBeenCalledWith({ r: 1, c: 2 });
   });
 
-  it('スワイプしていない普通のタップは通す', () => {
-    const { child, slide, click } = setup();
-    swipe(child, { x: 100, y: 100, target: child }, { x: 102, y: 101 });
+  it('盤の外で指を下ろしたら何も起きない', () => {
+    const { board, tap, slide } = setup();
+    drag(board, [10, 10], [12, 12]);
+    expect(tap).not.toHaveBeenCalled();
     expect(slide).not.toHaveBeenCalled();
-    child.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it('pointerdown を挟まない pointerup は無視する', () => {
+    const { child, tap } = setup();
+    child.dispatchEvent(pointer('pointerup', 100, 100));
+    expect(tap).not.toHaveBeenCalled();
+  });
+
+  it('destroy 後はイベントを受け取らない', () => {
+    const { child, tap } = setup();
+    im!.destroy();
+    drag(child, [100, 100], [102, 101]);
+    expect(tap).not.toHaveBeenCalled();
+  });
+
+  it('pointercancel のあとは tap も slide も発火しない', () => {
+    const { child, tap, slide } = setup();
+    child.dispatchEvent(pointer('pointerdown', 100, 100));
+    child.dispatchEvent(pointer('pointercancel', 100, 100));
+    child.dispatchEvent(pointer('pointerup', 101, 100));
+    expect(tap).not.toHaveBeenCalled();
+    expect(slide).not.toHaveBeenCalled();
+  });
+
+  it('追跡していない別の pointerId の pointerup は無視する(進行中のジェスチャは解決しない)', () => {
+    const { child, tap } = setup();
+    child.dispatchEvent(pointer('pointerdown', 100, 100, 1));
+    // 二本目の指が、一本目より先に離れる
+    child.dispatchEvent(pointer('pointerup', 101, 100, 2));
+    expect(tap).not.toHaveBeenCalled();
+    // 一本目の指はまだ追跡中のはずなので、離せばタップとして伝わる
+    child.dispatchEvent(pointer('pointerup', 101, 100, 1));
+    expect(tap).toHaveBeenCalledWith({ r: 1, c: 2 });
   });
 });

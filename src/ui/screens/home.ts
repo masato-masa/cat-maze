@@ -1,5 +1,5 @@
 import { ALL_LEVELS } from '../../levels/index.ts';
-import { catSvg } from '../tile-svg.ts';
+import { catSvg } from '../cat-sprite.ts';
 import type { ScreenDeps } from './game.ts';
 
 /** タイトル画面。「つづきから」を主ボタンにする。 */

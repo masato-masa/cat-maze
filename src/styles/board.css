@@ -5,35 +5,51 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  flex: 1 1 auto;
+  /* basis 0 にして高さを内容（.board の height）から切り離す。auto のままだと
+     .board の高さが --avail-h（.board-wrap の高さから算出）に依存し、
+     .board-wrap の高さが .board の内容量に依存する、という循環になる。 */
+  flex: 1 1 0;
   min-height: 0;
   padding: 8px 0;
 }
 
 .board {
-  --gap: 4px;
+  --gap: 6px;
   /* 1 マスの大きさは、横に入る大きさと縦に入る大きさの小さい方で決まる。
-     こうすると縦長・横長どちらの盤面でも画面からはみ出さない。 */
-  --avail-w: min(92vw, 460px);
-  --avail-h: 46vh;
+     こうすると縦長・横長どちらの盤面でも画面からはみ出さない。
+     min(92vw, 452px) はカードの外寸（にゃんどくの実測値）なので、
+     左右の padding 16px × 2 を引いた分が中身に使える幅になる。 */
+  --avail-w: calc(min(92vw, 452px) - 32px);
+  /* 中身に使える高さ。JS（board-view.ts）が .board-wrap の内寸を実測して
+     px で上書きする。ここの値は測定が終わるまでの一瞬と、ResizeObserver の
+     無い環境（jsdom 等）のための保険。
+     --step は下の transform: translate() の中で使われるため、ここに
+     パーセンテージを入れると（例: calc(100% - 32px)）、100% が要素自身の
+     ボックス基準で解決されて式ごと無効になり、translate が丸ごと
+     matrix(1,0,0,1,0,0) に潰れる。必ず絶対長（vh/px）にすること。 */
+  --avail-h: 60vh;
   --step: min(calc(var(--avail-w) / var(--cols)), calc(var(--avail-h) / var(--rows)));
   --cell: calc(var(--step) - var(--gap));
 
   position: relative;
-  width: calc(var(--step) * var(--cols));
-  height: calc(var(--step) * var(--rows));
-  background: var(--bg-soft);
-  border-radius: calc(var(--radius) + 4px);
-  padding: calc(var(--gap) / 2);
+  /* 外寸 = 中身（step * cols/rows）+ 左右・上下の padding 16px × 2。 */
+  width: calc(var(--step) * var(--cols) + 32px);
+  height: calc(var(--step) * var(--rows) + 32px);
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow);
   /* スワイプは自前で扱うので、ブラウザのジェスチャに取られないようにする */
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .grid-layer,
 .tile-layer,
 .actor-layer {
   position: absolute;
-  inset: calc(var(--gap) / 2);
+  inset: 16px;
 }
 
 .grid-layer {
@@ -60,31 +76,13 @@
 }
 
 .grid-cell {
-  border-radius: 12px;
-  background: transparent;
-  overflow: hidden;
-  transition: background var(--anim) ease-out;
+  border-radius: 8px;
 }
 
+/* 穴はタイルが無いマス。盤の地（白いカード）をそのまま見せ、
+   内側の影だけで「開いている」ことを示す。 */
 .grid-cell.hole {
-  background-color: var(--hole);
-  background-image: url('../assets/img/hole.png');
-  background-size: cover;
-  background-position: center;
-  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.28);
-}
-
-.grid-cell::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: transparent;
-  transition: background var(--anim) ease-out;
-  pointer-events: none;
-}
-
-.grid-cell.reachable::after {
-  background: color-mix(in srgb, var(--reach) 62%, transparent);
+  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.10);
 }
 
 .tile {
@@ -102,19 +100,13 @@
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--tile);
 }
 
-.tile-bg-img {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  pointer-events: none;
+.tile-visual.tile-fixed {
+  background: var(--tile-fixed);
 }
 
 .tile-road-svg {
@@ -127,17 +119,11 @@
 }
 
 /* 道は形（直線／カーブ／T字／十字）にかかわらず、常にこの1つの太さ・
-   縁取り色で描く。個別に画像化すると微妙な太さのブレが出てしまうため、
-   ここだけはコードで統一している。 */
+   縁取り色で描く。線幅は SVG 側の属性で与えている。 */
 .tile-road-outline line,
 .tile-road-outline circle {
   stroke: var(--road-outline);
   fill: var(--road-outline);
-}
-
-.tile-road-outline line {
-  stroke-width: 30;
-  stroke-linecap: round;
 }
 
 .tile-road-fill line,
@@ -146,27 +132,47 @@
   fill: var(--road);
 }
 
+.tile-road-outline line,
 .tile-road-fill line {
-  stroke-width: 24;
   stroke-linecap: round;
+}
+
+/* 家と魚は道と同じペンで描く。道と同系統の線で描かれることで盤面に溶ける。 */
+.tile-house-roof,
+.tile-house-body {
+  fill: var(--goal);
+  stroke: var(--road-outline);
+  stroke-width: 7;
+  stroke-linejoin: round;
+}
+
+.tile-house-door {
+  fill: var(--road-outline);
+}
+
+.tile-fish-body,
+.tile-fish-tail {
+  fill: var(--fish);
+  stroke: var(--road-outline);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+
+.tile-fish-eye {
+  fill: var(--road-outline);
 }
 
 .tile-mark {
   position: absolute;
-  top: 30%;
-  left: 30%;
-  width: 40%;
-  height: 40%;
   display: block;
-  object-fit: contain;
   pointer-events: none;
 }
 
 .tile-mark.tile-goal {
-  top: 17%;
-  left: 17%;
-  width: 66%;
-  height: 66%;
+  top: 24%;
+  left: 24%;
+  width: 52%;
+  height: 52%;
 }
 
 .tile-mark.tile-fish {
@@ -176,38 +182,18 @@
   height: 36%;
 }
 
-/* ねこが歩いて行けるマスは、タイル種別を問わず同じ光エフェクトで示す
-   （タイル全体を暗く塗る方式だと分かりにくい、キラキラ画像とゴールの光り方が
-   バラバラで統一感がない、という指摘を受けてこの形にまとめた）。
-   ふだんは透明にしておき、.reachable が付いたときだけふわっと現れて明滅する。 */
-.tile-reach-glow {
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(
-    circle at 50% 50%,
-    color-mix(in srgb, var(--star) 90%, transparent) 0%,
-    color-mix(in srgb, var(--star) 45%, transparent) 45%,
-    transparent 72%
-  );
-  transition: opacity var(--anim) ease-out;
+/* 猫が歩いて行けるマスは、そのマスの道を明るくする。
+   以前は黄色い放射グラデを明滅させていたが、盤全体が点滅して見えた。
+   歩ける範囲が「明るい道として一本に繋がって見える」ほうが情報として正しい。 */
+.tile.reachable .tile-road-fill line,
+.tile.reachable .tile-road-fill circle {
+  stroke: var(--road-lit);
+  fill: var(--road-lit);
 }
 
-.tile.reachable .tile-reach-glow {
-  opacity: 1;
-  animation: reach-glow-pulse 1500ms ease-in-out infinite;
-}
-
-@keyframes reach-glow-pulse {
-  0%,
-  100% {
-    transform: scale(0.85);
-  }
-  50% {
-    transform: scale(1.15);
-  }
+.tile-road-fill line,
+.tile-road-fill circle {
+  transition: stroke var(--anim) var(--ease), fill var(--anim) var(--ease);
 }
 
 /* 移動可能（スライドできる）マス・ヒントの強調は、画像の上に重ねた枠で示す。
@@ -217,7 +203,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  border-radius: 8px;
   pointer-events: none;
   box-shadow: var(--tile-ring, none);
 }
@@ -238,14 +224,37 @@
   }
 }
 
-.cat-img {
+/* 猫は 3 層。位置（.cat）／向き（.cat-flip）／呼吸（.cat-img）。
+   1 つの要素に重ねると、歩行アニメの transform と互いを打ち消し合う。 */
+.cat-flip {
   position: absolute;
   top: 18%;
   left: 18%;
   width: 64%;
   height: 64%;
+  transform: scaleX(var(--flip, 1));
+}
+
+.cat-img {
   display: block;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  animation: cat-breathe 3.6s ease-in-out infinite;
+}
+
+/* ごく浅い呼吸。止まっている絵より生き物らしく見えるが、
+   気づかれるほど大きく動かすと目障りになる。 */
+@keyframes cat-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
 }
 
 .cat {
@@ -264,9 +273,9 @@
   }
 }
 
-/* 初期描画ではアニメーションさせない */
+/* 初期描画ではアニメーションさせない。.grid-cell は transition を
+   持たなくなった（到達表示はタイル側の道の色に移った）ので対象外。 */
 .board.no-anim .tile,
-.board.no-anim .cat,
-.board.no-anim .grid-cell {
+.board.no-anim .cat {
   transition: none;
 }

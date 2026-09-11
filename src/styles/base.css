@@ -15,12 +15,11 @@
   --accent-soft: #f7d9b6;
 
   --road: #d68d4c;
-  --road-outline: #47230f;
+  --road-lit: #e5a468;      /* 到達可能なマスの道 */
+  --road-outline: #8a5230;  /* 旧 #47230f。ほぼ黒で硬かったので地に馴染ませる */
   --tile: #fff6e8;
-  --tile-fixed: #d9c6ab;
+  --tile-fixed: #e8dcc8;    /* 旧 #d9c6ab。固定タイルが 2 番目に目立つ必要はない */
   --stud: #a8927a;
-  --hole: #ad9678;
-  --reach: #ffd996;
 
   --cat: #4b3b2c;
   --cat-ink: #fff6e8;
@@ -31,8 +30,9 @@
   --star-off: #d8c9b3;
 
   --radius: 14px;
-  --shadow: 0 2px 0 rgba(61, 50, 38, 0.12);
-  --anim: 160ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --anim: 180ms;
   --anim-cat: 120ms;
 }
 
@@ -51,12 +51,11 @@
     --accent-soft: #57412a;
 
     --road: #dc9c5c;
-    --road-outline: #2c1509;
+    --road-lit: #eeb377;
+    --road-outline: #5c3418;
     --tile: #453729;
-    --tile-fixed: #574733;
+    --tile-fixed: #4f4132;
     --stud: #8a7358;
-    --hole: #1a1511;
-    --reach: #7a5c35;
 
     --cat: #f2e6d5;
     --cat-ink: #33291f;
