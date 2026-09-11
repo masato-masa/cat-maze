@@ -8,6 +8,7 @@ import { delta } from '../../core/conn.ts';
 import type { Dir } from '../../core/conn.ts';
 import type { Pos } from '../../core/types.ts';
 import { BoardView } from '../board-view.ts';
+import { CatSprite } from '../cat-sprite.ts';
 import { InputManager } from '../input.ts';
 import { iconHint, iconRetry, iconUndo } from '../icons.ts';
 import { buzz, isMuted, play, setMuted } from '../sfx.ts';
@@ -72,6 +73,7 @@ export function renderGameScreen(
 
       <div class="game-message" hidden>
         <div class="message-card">
+          <div class="banner-cat"></div>
           <p class="message-title">クリア!</p>
           <div class="stars"></div>
           <p class="message-moves"></p>
@@ -105,6 +107,9 @@ export function renderGameScreen(
   let reach: Set<number> = reachableSet(session.current);
   /** 歩行音を刻む setTimeout の ID。歩行が中断・画面離脱したら必ず止める。 */
   let walkTimers: number[] = [];
+  /** クリアのカードに出す猫。盤の上の猫とは別個体（表情の連動を避ける）。
+      CatSprite はタイマーを持つので、画面を離れるとき必ず destroy する。 */
+  const bannerCats: CatSprite[] = [];
 
   function clearWalkTimers(): void {
     for (const id of walkTimers) window.clearTimeout(id);
@@ -189,6 +194,12 @@ export function renderGameScreen(
   }
 
   function showClear(stars: 1 | 2 | 3, moves: number): void {
+    const bannerCat = new CatSprite();
+    bannerCat.setMood('happy');
+    const slot = q('.banner-cat');
+    slot.innerHTML = '';
+    slot.append(bannerCat.el);
+    bannerCats.push(bannerCat);
     const starsEl = q('.stars');
     starsEl.innerHTML = '';
     for (let i = 0; i < 3; i++) {
@@ -342,5 +353,6 @@ export function renderGameScreen(
     stopCatWalk();
     input.destroy();
     view.destroy();
+    for (const c of bannerCats) c.destroy();
   };
 }

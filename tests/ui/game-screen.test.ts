@@ -281,6 +281,23 @@ describe('猫の反応', () => {
   });
 });
 
+describe('クリアのカード', () => {
+  it('クリアのカードに嬉しい顔の猫が出る', () => {
+    open('W1-1');
+    // W1-1 は 1 手（1 回のスライド）で解ける。スライドしただけでは猫はまだ
+    // ゴールの上にいないので、そこへ歩かせて初めて cleared になる
+    // （「猫の反応 > クリアすると嬉しい顔になる」と同じ手順）。
+    q<HTMLButtonElement>('.hint-btn').click();
+    const hinted = root.querySelector<HTMLElement>('.tile.hinted')!;
+    swipeCell(Number(hinted.dataset['r']), Number(hinted.dataset['c']));
+    const goal = root.querySelector<HTMLElement>('.tile-layer .tile[data-kind="goal"]')!;
+    tapCell(Number(goal.dataset['r']), Number(goal.dataset['c']));
+    const img = q('.message-card').querySelector('img')!;
+    expect(img.getAttribute('src')).toContain('happy');
+    cleanup();
+  });
+});
+
 describe('先行入力', () => {
   // spy の後始末をテスト本体の末尾に置くと、assert で落ちたときに後続のテストへ
   // 漏れる。afterEach に寄せて必ず戻す。
