@@ -137,14 +137,14 @@ describe('対局画面', () => {
 
   it('魚を集めるステージでは残り数を出す', () => {
     open('W3-1');
-    expect(q('.fish-line').hidden).toBe(false);
+    expect(q('.fish-pill').hidden).toBe(false);
     expect(q('.fish-count').textContent).toMatch(/さかな 0 \/ \d/);
     cleanup();
   });
 
   it('魚のないステージでは魚の表示を出さない', () => {
     open('W1-1');
-    expect(q('.fish-line').hidden).toBe(true);
+    expect(q('.fish-pill').hidden).toBe(true);
     cleanup();
   });
 
@@ -211,6 +211,35 @@ describe('対局画面', () => {
     cleanup();
     key('ArrowRight');
     expect(q('.moves').textContent).toBe('0');
+  });
+});
+
+describe('プレイ画面のレイアウト', () => {
+  it('操作の説明ははじめだけ出て、1 手打つと消える', () => {
+    open('W1-1');
+    const line = q('.controls-line');
+    expect(line.hidden).toBe(false);
+    q<HTMLButtonElement>('.hint-btn').click();
+    const hinted = root.querySelector<HTMLElement>('.tile.hinted')!;
+    swipeCell(Number(hinted.dataset['r']), Number(hinted.dataset['c']));
+    expect(line.hidden).toBe(true);
+    cleanup();
+  });
+
+  it('フッタのボタンは丸アイコンで、中に線画を持つ', () => {
+    open('W1-1');
+    for (const sel of ['.undo-btn', '.retry-btn', '.hint-btn']) {
+      const btn = q<HTMLButtonElement>(sel);
+      expect(btn.classList.contains('tool')).toBe(true);
+      expect(btn.querySelector('svg')).not.toBeNull();
+    }
+    cleanup();
+  });
+
+  it('さかなの表示はヘッダの中に入る', () => {
+    open('W3-1');
+    expect(q('.game-header').querySelector('.fish-pill')).not.toBeNull();
+    cleanup();
   });
 });
 

@@ -9,6 +9,7 @@ import type { Dir } from '../../core/conn.ts';
 import type { Pos } from '../../core/types.ts';
 import { BoardView } from '../board-view.ts';
 import { InputManager } from '../input.ts';
+import { iconHint, iconRetry, iconUndo } from '../icons.ts';
 import { buzz, isMuted, play, setMuted } from '../sfx.ts';
 import type { Route } from '../router.ts';
 import type { ProgressStore } from '../storage.ts';
@@ -44,18 +45,19 @@ export function renderGameScreen(
           <span class="level-id">${world ? world.name : ''} ${def.id}</span>
           <span class="level-name">${def.name}</span>
         </div>
-        <div class="move-counter">
-          <span class="moves">0</span>
-          <span class="moves-label">さいたん ${def.optimalMoves}</span>
+        <div class="header-right">
+          <div class="move-counter">
+            <span class="moves">0</span>
+            <span class="moves-label">さいたん ${def.optimalMoves}</span>
+          </div>
+          <span class="fish-pill" hidden><span class="fish-count"></span></span>
+          <button class="icon-btn mute-btn" type="button" aria-label="おと"></button>
         </div>
-        <button class="icon-btn mute-btn" type="button" aria-label="おと"></button>
       </header>
 
       <p class="hint-line">${def.hint ?? ''}</p>
 
       <div class="board-wrap"><div class="board-root"></div></div>
-
-      <div class="fish-line" hidden><span class="fish-count"></span></div>
 
       <p class="controls-line">
         <span class="ctl"><b>タップ / やじるし</b> ねこが あるく</span>
@@ -63,9 +65,9 @@ export function renderGameScreen(
       </p>
 
       <footer class="game-footer">
-        <button class="btn undo-btn" type="button">もどす</button>
-        <button class="btn retry-btn" type="button">やりなおし</button>
-        <button class="btn hint-btn" type="button">ヒント</button>
+        <button class="tool undo-btn" type="button" aria-label="もどす">${iconUndo()}</button>
+        <button class="tool retry-btn" type="button" aria-label="やりなおし">${iconRetry()}</button>
+        <button class="tool hint-btn" type="button" aria-label="ヒント">${iconHint()}</button>
       </footer>
 
       <div class="game-message" hidden>
@@ -85,10 +87,11 @@ export function renderGameScreen(
   const q = <T extends HTMLElement>(sel: string): T => root.querySelector<T>(sel)!;
   const boardRoot = q('.board-root');
   const movesEl = q('.moves');
-  const fishLine = q('.fish-line');
+  const fishPill = q('.fish-pill');
   const fishCount = q('.fish-count');
   const message = q('.game-message');
   const undoBtn = q<HTMLButtonElement>('.undo-btn');
+  const controls = q('.controls-line');
 
   const view = new BoardView(boardRoot, session.current.board);
   const cat = view.catSprite;
@@ -139,6 +142,11 @@ export function renderGameScreen(
   let prevFish = session.current.fishTaken;
   let prevCleared = session.current.cleared;
 
+  // 説明は最初の 1 手まで。ずっと出しておくと画面が説明くさくなる。
+  function updateControls(): void {
+    controls.hidden = session.current.moves > 0;
+  }
+
   function draw(): void {
     const s = session.current;
     reach = reachableSet(s);
@@ -150,10 +158,10 @@ export function renderGameScreen(
     movesEl.textContent = String(s.moves);
     undoBtn.disabled = !session.canUndo;
     if (s.fishTotal > 0) {
-      fishLine.hidden = false;
+      fishPill.hidden = false;
       fishCount.textContent = `さかな ${s.fishTaken} / ${s.fishTotal}`;
     } else {
-      fishLine.hidden = true;
+      fishPill.hidden = true;
     }
     if (s.moves > prevMoves) {
       play('slide');
@@ -177,6 +185,7 @@ export function renderGameScreen(
       deps.store.record(def!.id, stars, s.moves);
       showClear(stars, s.moves);
     }
+    updateControls();
   }
 
   function showClear(stars: 1 | 2 | 3, moves: number): void {

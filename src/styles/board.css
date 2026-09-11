@@ -11,29 +11,35 @@
 }
 
 .board {
-  --gap: 4px;
+  --gap: 6px;
   /* 1 マスの大きさは、横に入る大きさと縦に入る大きさの小さい方で決まる。
      こうすると縦長・横長どちらの盤面でも画面からはみ出さない。 */
-  --avail-w: min(92vw, 460px);
-  --avail-h: 46vh;
+  --avail-w: min(92vw, 452px);
+  /* 高さは残り全部を使う。46vh で止めていた頃は画面上部に大きな空白ができていた。
+     100% は .board-wrap の高さ（flex: 1 1 auto で決まる）を指すので、
+     盤のカードの上下 padding 16px × 2 を引いた分が中身に使える高さになる。 */
+  --avail-h: calc(100% - 32px);
   --step: min(calc(var(--avail-w) / var(--cols)), calc(var(--avail-h) / var(--rows)));
   --cell: calc(var(--step) - var(--gap));
 
   position: relative;
   width: calc(var(--step) * var(--cols));
   height: calc(var(--step) * var(--rows));
-  background: var(--bg-soft);
-  border-radius: calc(var(--radius) + 4px);
-  padding: calc(var(--gap) / 2);
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow);
   /* スワイプは自前で扱うので、ブラウザのジェスチャに取られないようにする */
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .grid-layer,
 .tile-layer,
 .actor-layer {
   position: absolute;
-  inset: calc(var(--gap) / 2);
+  inset: 16px;
 }
 
 .grid-layer {
