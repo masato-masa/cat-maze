@@ -9,6 +9,7 @@ import type { Dir } from '../../core/conn.ts';
 import type { Pos } from '../../core/types.ts';
 import { BoardView } from '../board-view.ts';
 import { InputManager } from '../input.ts';
+import { buzz, isMuted, play, setMuted } from '../sfx.ts';
 import type { Route } from '../router.ts';
 import type { ProgressStore } from '../storage.ts';
 
@@ -47,6 +48,7 @@ export function renderGameScreen(
           <span class="moves">0</span>
           <span class="moves-label">さいたん ${def.optimalMoves}</span>
         </div>
+        <button class="icon-btn mute-btn" type="button" aria-label="おと"></button>
       </header>
 
       <p class="hint-line">${def.hint ?? ''}</p>
@@ -98,17 +100,27 @@ export function renderGameScreen(
   let queued: Pos | null = null;
   /** draw() が最後に計算した到達可能なマス。盤が変わるたびに更新される。 */
   let reach: Set<number> = reachableSet(session.current);
+  /** 歩行音を刻む setTimeout の ID。歩行が中断・画面離脱したら必ず止める。 */
+  let walkTimers: number[] = [];
+
+  function clearWalkTimers(): void {
+    for (const id of walkTimers) window.clearTimeout(id);
+    walkTimers = [];
+  }
 
   function stopCatWalk(): void {
     view.cancelCatAnimation();
     walking = false;
     queued = null;
+    clearWalkTimers();
   }
 
   /** 行けないマスをタップされたときの反応。今までは完全に無反応だった。 */
   function refuse(): void {
     cat.setMood('sad', 400);
     view.shakeCat();
+    play('blocked');
+    buzz(20);
   }
 
   /** 猫の現在地から経路（Dir の列）をたどったマス目の座標列（始点を含む）を作る。 */
@@ -123,6 +135,7 @@ export function renderGameScreen(
     return out;
   }
 
+  let prevMoves = session.current.moves;
   let prevFish = session.current.fishTaken;
   let prevCleared = session.current.cleared;
 
@@ -142,8 +155,20 @@ export function renderGameScreen(
     } else {
       fishLine.hidden = true;
     }
-    if (s.fishTaken > prevFish) cat.setMood('happy', 700);
-    if (s.cleared && !prevCleared) cat.setMood('happy');
+    if (s.moves > prevMoves) {
+      play('slide');
+      buzz(10);
+    }
+    if (s.fishTaken > prevFish) {
+      play('fish');
+      cat.setMood('happy', 700);
+    }
+    if (s.cleared && !prevCleared) {
+      play('clear');
+      buzz([40, 60, 40]);
+      cat.setMood('happy');
+    }
+    prevMoves = s.moves;
     prevFish = s.fishTaken;
     prevCleared = s.cleared;
     if (s.cleared && !recorded) {
@@ -191,6 +216,13 @@ export function renderGameScreen(
     walking = true;
     view.setCatAnimated(false);
     act(() => session.walkTo(target));
+    // 歩行音だけは 1 マスずつ鳴らす。移動そのものは 1 本のアニメーションなので、
+    // 経路の長さと 1 マスあたりの時間から刻む。画面を離れる・歩行が中断される
+    // ときは stopCatWalk() がこのタイマーを止める。
+    clearWalkTimers();
+    for (let i = 1; i < waypoints.length; i++) {
+      walkTimers.push(window.setTimeout(() => play('walk'), (i - 1) * WALK_STEP_MS));
+    }
     void view.walkCatThrough(waypoints, WALK_STEP_MS).then(() => {
       view.setCatAnimated(true);
       walking = false;
@@ -271,6 +303,17 @@ export function renderGameScreen(
     act(() => session.reset());
   });
   q('.select-btn').addEventListener('click', () => deps.go({ screen: 'select' }));
+
+  const muteBtn = q<HTMLButtonElement>('.mute-btn');
+  function paintMute(): void {
+    muteBtn.textContent = isMuted() ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-pressed', String(isMuted()));
+  }
+  muteBtn.addEventListener('click', () => {
+    setMuted(!isMuted());
+    paintMute();
+  });
+  paintMute();
 
   draw();
 
