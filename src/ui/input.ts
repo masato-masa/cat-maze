@@ -46,6 +46,8 @@ export class InputManager {
   private startY = 0;
   private startPos: Pos | null = null;
   private down = false;
+  /** 追跡中の指の pointerId。二本目の指の up/cancel が一本目のジェスチャを誤って解決しないようにする。 */
+  private activePointerId: number | null = null;
 
   constructor(target: EventTarget) {
     this.target = target;
@@ -94,16 +96,27 @@ export class InputManager {
     const pe = ev as PointerEvent;
     if (pe.isPrimary === false) return;
     this.down = true;
+    this.activePointerId = pe.pointerId;
     this.startX = pe.clientX;
     this.startY = pe.clientY;
     const el = (pe.target as HTMLElement | null)?.closest<HTMLElement>('[data-r]') ?? null;
     this.startPos = el ? { r: Number(el.dataset['r']), c: Number(el.dataset['c']) } : null;
+    // 指が盤の外まで動いてから離れると、Pointer Events は live hit-test で
+    // その時点の要素に pointerup を出すため盤面のリスナに届かない。
+    // 捕捉しておけば、離れた場所に関わらずこの要素に届く。
+    // jsdom には setPointerCapture が無いのでガードする。
+    try {
+      this.pointerEl?.setPointerCapture?.(pe.pointerId);
+    } catch {
+      // 捕捉できない環境やポインタでは諦める（テストや古いブラウザ向けの保険）
+    }
   };
 
   private onPointerUp = (ev: Event): void => {
-    if (!this.down) return;
-    this.down = false;
     const pe = ev as PointerEvent;
+    if (!this.down || pe.pointerId !== this.activePointerId) return;
+    this.down = false;
+    this.releaseCapture(pe.pointerId);
     const from = this.startPos;
     this.startPos = null;
     if (!from) return;
@@ -115,10 +128,22 @@ export class InputManager {
     else this.emit('tap', from);
   };
 
-  private onPointerCancel = (): void => {
+  private onPointerCancel = (ev: Event): void => {
+    const pe = ev as PointerEvent;
+    if (pe.pointerId !== this.activePointerId) return;
     this.down = false;
     this.startPos = null;
+    this.releaseCapture(pe.pointerId);
   };
+
+  private releaseCapture(pointerId: number): void {
+    this.activePointerId = null;
+    try {
+      this.pointerEl?.releasePointerCapture?.(pointerId);
+    } catch {
+      // 捕捉できていない/既に外れている場合は何もしない
+    }
+  }
 
   destroy(): void {
     this.target.removeEventListener('keydown', this.onKeyDown as EventListener);

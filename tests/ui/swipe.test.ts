@@ -9,11 +9,12 @@ afterEach(() => {
 });
 
 /** jsdom には PointerEvent が無いので、必要なプロパティだけ持つイベントを作る。 */
-function pointer(type: string, x: number, y: number): Event {
+function pointer(type: string, x: number, y: number, pointerId = 1): Event {
   const ev = new Event(type, { bubbles: true, cancelable: true });
   Object.defineProperty(ev, 'clientX', { value: x });
   Object.defineProperty(ev, 'clientY', { value: y });
   Object.defineProperty(ev, 'isPrimary', { value: true });
+  Object.defineProperty(ev, 'pointerId', { value: pointerId });
   return ev;
 }
 
@@ -93,5 +94,25 @@ describe('ポインタ操作', () => {
     im!.destroy();
     drag(child, [100, 100], [102, 101]);
     expect(tap).not.toHaveBeenCalled();
+  });
+
+  it('pointercancel のあとは tap も slide も発火しない', () => {
+    const { child, tap, slide } = setup();
+    child.dispatchEvent(pointer('pointerdown', 100, 100));
+    child.dispatchEvent(pointer('pointercancel', 100, 100));
+    child.dispatchEvent(pointer('pointerup', 101, 100));
+    expect(tap).not.toHaveBeenCalled();
+    expect(slide).not.toHaveBeenCalled();
+  });
+
+  it('追跡していない別の pointerId の pointerup は無視する(進行中のジェスチャは解決しない)', () => {
+    const { child, tap } = setup();
+    child.dispatchEvent(pointer('pointerdown', 100, 100, 1));
+    // 二本目の指が、一本目より先に離れる
+    child.dispatchEvent(pointer('pointerup', 101, 100, 2));
+    expect(tap).not.toHaveBeenCalled();
+    // 一本目の指はまだ追跡中のはずなので、離せばタップとして伝わる
+    child.dispatchEvent(pointer('pointerup', 101, 100, 1));
+    expect(tap).toHaveBeenCalledWith({ r: 1, c: 2 });
   });
 });
