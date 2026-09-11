@@ -69,3 +69,52 @@ export function tileSvg(tile: Tile): string {
 
   return `<div class="${wrapClass}">${parts.join('')}</div>`;
 }
+
+/**
+ * タイルの DOM を組む。初回だけ呼ぶ。
+ *
+ * 以前は毎手・全タイルで innerHTML を作り直していた。1 手ごとに全タイルの
+ * 中身が捨てられて作り直されるので、盤が大きいほど操作がもたついた。
+ * 実際にタイルの見た目が変わるのは「魚を取ったとき」と
+ * 「conn の違うタイルが同じ id を引き継いだとき」だけなので、差分で足りる。
+ */
+export function createTileEl(tile: Tile): HTMLElement {
+  const el = document.createElement('div');
+  el.className = 'tile';
+  el.innerHTML = `<div class="tile-visual"></div>`;
+  const visual = el.firstElementChild as HTMLElement;
+  visual.insertAdjacentHTML('beforeend', fishSvg());
+  updateTileEl(el, tile, true);
+  return el;
+}
+
+/** 変わったものだけ触る。前回の値は data 属性に持たせておく。 */
+export function updateTileEl(el: HTMLElement, tile: Tile, force = false): void {
+  const visual = el.querySelector<HTMLElement>('.tile-visual')!;
+
+  if (force || el.dataset['conn'] !== String(tile.conn)) {
+    el.dataset['conn'] = String(tile.conn);
+    el.querySelector('.tile-road-svg')?.remove();
+    const road = roadSvg(tile.conn);
+    if (road) {
+      visual.insertAdjacentHTML(
+        'afterbegin',
+        `<svg class="tile-road-svg" viewBox="0 0 100 100" aria-hidden="true">${road}</svg>`,
+      );
+    }
+  }
+
+  const fish = visual.querySelector<SVGElement>('.tile-fish')!;
+
+  if (force || el.dataset['kind'] !== tile.kind) {
+    el.dataset['kind'] = tile.kind;
+    el.querySelector('.tile-goal')?.remove();
+    // 魚は常に最前面に描きたいので、魚の手前（DOM 上は直前）に差し込む。
+    if (tile.kind === 'goal') fish.insertAdjacentHTML('beforebegin', houseSvg());
+  }
+
+  if (tile.fish) fish.removeAttribute('hidden');
+  else fish.setAttribute('hidden', '');
+
+  visual.classList.toggle('tile-fixed', tile.fixed);
+}

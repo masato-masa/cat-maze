@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { BoardView } from '../../src/ui/board-view.ts';
 import { createBoard } from '../../src/core/board.ts';
+import { newGame } from '../../src/core/game.ts';
 import { getLevel } from '../../src/levels/index.ts';
 
 function view(): { v: BoardView; catEl: HTMLElement } {
@@ -53,5 +54,33 @@ describe('猫の歩行アニメーション', () => {
     v.catSprite.faceWest(true);
     await v.walkCatThrough([{ r: 0, c: 1 }, { r: 1, c: 1 }], 120);
     expect(v.catSprite.el.style.getPropertyValue('--flip')).toBe('-1');
+  });
+});
+
+describe('render のタイル差分更新', () => {
+  it('位置も見た目も変わらないタイルは DOM を作り直さない', () => {
+    const { v } = view();
+    const state = newGame(getLevel('W1-1')!);
+    const opts = { reachable: new Set<number>(), slidable: [] };
+
+    v.render(state, opts);
+    const before = document.querySelector('.tile');
+
+    v.render(state, opts);
+    const after = document.querySelector('.tile');
+
+    expect(after).toBe(before);
+  });
+
+  it('動いたタイルが無ければ requestAnimationFrame を待たずに位置を反映する', () => {
+    const { v } = view();
+    const state = newGame(getLevel('W1-1')!);
+    const opts = { reachable: new Set<number>(), slidable: [] };
+
+    v.render(state, opts); // 初回（no-anim のため rAF を1回使う）
+
+    const raf = vi.spyOn(globalThis, 'requestAnimationFrame');
+    v.render(state, opts); // 2回目は何も動いていない
+    expect(raf).not.toHaveBeenCalled();
   });
 });

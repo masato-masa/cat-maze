@@ -7,7 +7,7 @@
 import { idx } from '../core/board.ts';
 import type { Board, GameState, Pos } from '../core/types.ts';
 import { CatSprite } from './cat-sprite.ts';
-import { tileSvg } from './tile-svg.ts';
+import { createTileEl, updateTileEl } from './tile-svg.ts';
 
 export type RenderOpts = {
   reachable: Set<number>;
@@ -166,22 +166,25 @@ export class BoardView {
         seen.add(tile.id);
         let el = this.tiles.get(tile.id);
         if (!el) {
-          el = document.createElement('div');
-          el.className = 'tile';
+          el = createTileEl(tile);
           el.dataset['r'] = String(r);
           el.dataset['c'] = String(c);
           this.place(el, r, c);
           this.tileLayer.appendChild(el);
           this.tiles.set(tile.id, el);
+        } else {
+          // 見た目が変わった箇所だけ更新する（conn の変化、魚の付け外しなど）。
+          updateTileEl(el, tile);
         }
-        // 見た目（魚の有無など）は毎回作り直す。タイル数は多くないので十分速い。
-        el.innerHTML = tileSvg(tile);
         el.dataset['r'] = String(r);
         el.dataset['c'] = String(c);
         el.classList.toggle('slidable', slid.has(idx(b, r, c)));
         el.classList.toggle('reachable', opts.reachable.has(idx(b, r, c)));
         el.classList.toggle('hinted', idx(b, r, c) === hintKey);
-        moved.push([el, r, c]);
+        if (el.style.getPropertyValue('--r') !== String(r) ||
+            el.style.getPropertyValue('--c') !== String(c)) {
+          moved.push([el, r, c]);
+        }
       }
     }
 
@@ -202,6 +205,9 @@ export class BoardView {
       applyPositions();
       requestAnimationFrame(() => this.root.classList.remove('no-anim'));
       this.first = false;
+    } else if (moved.length === 0) {
+      // 動いたタイルが無いなら次フレームを待つ理由が無い
+      applyPositions();
     } else {
       // 一度前の位置のまま描かせてから次フレームで動かす（これでトランジションが走る）
       requestAnimationFrame(applyPositions);

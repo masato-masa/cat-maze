@@ -1,5 +1,6 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { tileSvg } from '../../src/ui/tile-svg.ts';
+import { createTileEl, updateTileEl, tileSvg } from '../../src/ui/tile-svg.ts';
 import { parseConn } from '../../src/core/conn.ts';
 import type { Tile } from '../../src/core/types.ts';
 
@@ -72,5 +73,47 @@ describe('tileSvg', () => {
 
   it('明滅する光の膜を持たない', () => {
     expect(tileSvg(tile('NESW'))).not.toContain('tile-reach-glow');
+  });
+});
+
+describe('タイルの差分更新', () => {
+  it('同じ内容で呼んでも道の SVG 要素を作り直さない', () => {
+    const t = tile('NE');
+    const el = createTileEl(t);
+    const before = el.querySelector('.tile-road-svg');
+    updateTileEl(el, t);
+    expect(el.querySelector('.tile-road-svg')).toBe(before);
+  });
+
+  it('conn が変わったときだけ道を描き直す', () => {
+    const el = createTileEl(tile('NE'));
+    const before = el.querySelector('.tile-road-svg');
+    updateTileEl(el, tile('NESW'));
+    const after = el.querySelector('.tile-road-svg');
+    expect(after).not.toBe(before);
+    expect((after!.innerHTML.match(/<line/g) ?? []).length).toBe(8);
+  });
+
+  it('魚の付け外しは hidden の切り替えだけで行う', () => {
+    const el = createTileEl(tile('NS', 'road', false, true));
+    const fish = el.querySelector<SVGElement>('.tile-fish')!;
+    updateTileEl(el, tile('NS', 'road', false, false));
+    expect(el.querySelector('.tile-fish')).toBe(fish); // 要素は残る
+    expect(fish.hasAttribute('hidden')).toBe(true);
+    updateTileEl(el, tile('NS', 'road', false, true));
+    expect(fish.hasAttribute('hidden')).toBe(false);
+  });
+
+  it('魚を持たないタイルにも魚の器だけは用意しておく', () => {
+    const el = createTileEl(tile('NS'));
+    expect(el.querySelector('.tile-fish')).not.toBeNull();
+    expect(el.querySelector<SVGElement>('.tile-fish')!.hasAttribute('hidden')).toBe(true);
+  });
+
+  it('固定かどうかはクラスの付け外しで表す', () => {
+    const el = createTileEl(tile('NS'));
+    const visual = el.querySelector('.tile-visual')!;
+    updateTileEl(el, tile('NS', 'road', true));
+    expect(visual.classList.contains('tile-fixed')).toBe(true);
   });
 });
