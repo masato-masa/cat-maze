@@ -137,49 +137,90 @@
   stroke-linecap: round;
 }
 
-/* 家と魚は道と同じペンで描く。道と同系統の線で描かれることで盤面に溶ける。 */
-.tile-house-roof,
-.tile-house-body {
-  fill: var(--goal);
-  stroke: var(--road-outline);
-  stroke-width: 7;
-  stroke-linejoin: round;
-}
-
-.tile-house-door {
-  fill: var(--road-outline);
-}
-
-.tile-fish-body,
-.tile-fish-tail {
-  fill: var(--fish);
-  stroke: var(--road-outline);
-  stroke-width: 6;
-  stroke-linejoin: round;
-}
-
-.tile-fish-eye {
-  fill: var(--road-outline);
-}
-
+/* 家と魚は猫と同じ画風の 1 枚絵。道を隠さない大きさに収める。 */
 .tile-mark {
   position: absolute;
   display: block;
+  object-fit: contain;
   pointer-events: none;
+  -webkit-user-drag: none;
 }
 
 .tile-mark.tile-goal {
-  top: 24%;
-  left: 24%;
-  width: 52%;
-  height: 52%;
+  top: 22%;
+  left: 22%;
+  width: 56%;
+  height: 56%;
+  animation: mark-breathe 3.6s ease-in-out infinite;
 }
 
 .tile-mark.tile-fish {
-  top: 32%;
-  left: 32%;
-  width: 36%;
-  height: 36%;
+  top: 30%;
+  left: 30%;
+  width: 40%;
+  height: 40%;
+  animation: fish-float 2.8s ease-in-out infinite;
+}
+
+/* 猫の呼吸と同じ作法。止まっている絵より生き物らしく見えるが、
+   気づかれるほど大きく動かすと目障りになる。 */
+@keyframes mark-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+/* 魚は水の中にいるように、浮きながらわずかに傾く。 */
+@keyframes fish-float {
+  0%,
+  100% {
+    transform: translateY(-4%) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(4%) rotate(3deg);
+  }
+}
+
+/* 取られた魚。一度ふくらんでから上へ消える。JS が 420ms 後に隠す。 */
+.tile-mark.tile-fish.taken {
+  animation: fish-taken 420ms ease-out forwards;
+}
+
+@keyframes fish-taken {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  35% {
+    transform: scale(1.5) translateY(-10%);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.7) translateY(-70%);
+    opacity: 0;
+  }
+}
+
+/* クリアの瞬間、家が猫と一緒に跳ねる。 */
+.tile.cleared .tile-mark.tile-goal {
+  animation: mark-hop 520ms ease-out 2;
+}
+
+@keyframes mark-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-14%) scale(1.06);
+  }
+  70% {
+    transform: translateY(0) scale(0.97);
+  }
 }
 
 /* 猫が歩いて行けるマスは、そのマスの道を明るくする。

@@ -23,10 +23,16 @@ const tile = (spec: string, kind: Tile['kind'] = 'road', fixed = false, fish = f
 describe('createTileEl が描く見た目', () => {
   const html = (t: Tile): string => createTileEl(t).outerHTML;
 
-  it('画像をいっさい使わない', () => {
-    const out = html(tile('NESW', 'goal', true, true));
-    expect(out).not.toContain('<img');
-    expect(out).not.toContain('.png');
+  it('タイルの地と道には画像を使わない', () => {
+    // 木目テクスチャが道を埋もれさせていた頃の反省。地と道はコードで描く。
+    // 家と魚だけは猫と同じ画風の 1 枚絵を使う（形が 1 つしかないので、
+    // 道のような「複数の形で太さを完全一致させる」要件が無い）。
+    const el = createTileEl(tile('NESW', 'goal', true, true));
+    const imgs = [...el.querySelectorAll('img')].map((i) => i.className);
+    expect(imgs.sort()).toEqual(['tile-mark tile-fish', 'tile-mark tile-goal']);
+
+    // 道の SVG そのものに画像は無い
+    expect(el.querySelector('.tile-road-svg')!.outerHTML).not.toContain('image');
   });
 
   it('道の無いタイルには通路 SVG を出さない', () => {
@@ -59,10 +65,10 @@ describe('createTileEl が描く見た目', () => {
     expect(html(tile('NS'))).not.toContain('tile-fixed');
   });
 
-  it('ゴールには家を SVG で描く', () => {
+  it('ゴールには家の画像を描く', () => {
     const out = html(tile('NS', 'goal'));
     expect(out).toContain('tile-goal');
-    expect(out).toContain('tile-house-roof');
+    expect(out).toContain('house');
   });
 
   it('固定されたゴールも表現できる', () => {
@@ -75,18 +81,19 @@ describe('createTileEl が描く見た目', () => {
     // createTileEl は魚の器を常に用意しておき、hidden 属性で切り替える
     // （tileSvg のように「あるときだけ」要素ごと出す方式ではない）。
     const withFish = createTileEl(tile('NS', 'road', false, true));
-    const fish = withFish.querySelector<SVGElement>('.tile-fish')!;
+    const fish = withFish.querySelector<HTMLElement>('.tile-fish')!;
     expect(fish).not.toBeNull();
     expect(fish.hasAttribute('hidden')).toBe(false);
-    expect(withFish.outerHTML).toContain('tile-fish-body');
+    expect(withFish.outerHTML).toContain('fish');
 
     const withoutFish = createTileEl(tile('NS'));
-    expect(withoutFish.querySelector<SVGElement>('.tile-fish')!.hasAttribute('hidden')).toBe(true);
+    expect(withoutFish.querySelector<HTMLElement>('.tile-fish')!.hasAttribute('hidden')).toBe(true);
   });
 
-  it('色を直書きしない（テーマは CSS で切り替える）', () => {
-    const out = html(tile('NESW', 'goal', true, true));
-    expect(out).not.toMatch(/fill="#|stroke="#|fill="rgb|style="/);
+  it('道は色を直書きしない（テーマは CSS で切り替える）', () => {
+    // 家と魚は画像なので対象外。コードで描く道だけを見る。
+    const road = html(tile('NESW')).match(/<svg class="tile-road-svg".*?<\/svg>/s)![0];
+    expect(road).not.toMatch(/fill="#|stroke="#|fill="rgb|style="/);
   });
 
   it('明滅する光の膜を持たない', () => {
@@ -112,20 +119,35 @@ describe('タイルの差分更新', () => {
     expect((after!.innerHTML.match(/<line/g) ?? []).length).toBe(8);
   });
 
-  it('魚の付け外しは hidden の切り替えだけで行う', () => {
+  it('魚の付け外しは要素を作り直さずに行う', () => {
     const el = createTileEl(tile('NS', 'road', false, true));
-    const fish = el.querySelector<SVGElement>('.tile-fish')!;
+    const fish = el.querySelector<HTMLElement>('.tile-fish')!;
     updateTileEl(el, tile('NS', 'road', false, false));
     expect(el.querySelector('.tile-fish')).toBe(fish); // 要素は残る
-    expect(fish.hasAttribute('hidden')).toBe(true);
     updateTileEl(el, tile('NS', 'road', false, true));
     expect(fish.hasAttribute('hidden')).toBe(false);
+  });
+
+  it('魚を取ると、消える前に弾ける演出が入る', () => {
+    // 取った瞬間に無言で消えると、何が起きたのか伝わらない。
+    const el = createTileEl(tile('NS', 'road', false, true));
+    const fish = el.querySelector<HTMLElement>('.tile-fish')!;
+    updateTileEl(el, tile('NS', 'road', false, false));
+    expect(fish.classList.contains('taken')).toBe(true);
+    expect(fish.hasAttribute('hidden')).toBe(false); // 演出中はまだ見えている
+  });
+
+  it('最初から魚が無いタイルでは弾けさせない', () => {
+    const el = createTileEl(tile('NS'));
+    const fish = el.querySelector<HTMLElement>('.tile-fish')!;
+    expect(fish.classList.contains('taken')).toBe(false);
+    expect(fish.hasAttribute('hidden')).toBe(true);
   });
 
   it('魚を持たないタイルにも魚の器だけは用意しておく', () => {
     const el = createTileEl(tile('NS'));
     expect(el.querySelector('.tile-fish')).not.toBeNull();
-    expect(el.querySelector<SVGElement>('.tile-fish')!.hasAttribute('hidden')).toBe(true);
+    expect(el.querySelector<HTMLElement>('.tile-fish')!.hasAttribute('hidden')).toBe(true);
   });
 
   it('固定かどうかはクラスの付け外しで表す', () => {

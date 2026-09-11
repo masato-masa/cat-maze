@@ -238,6 +238,8 @@ export class BoardView {
         el.classList.toggle('slidable', slid.has(idx(b, r, c)));
         el.classList.toggle('reachable', opts.reachable.has(idx(b, r, c)));
         el.classList.toggle('hinted', idx(b, r, c) === hintKey);
+        // クリアしたら家が跳ねる。猫の cat-hop と揃えて、同じ瞬間に弾ませる。
+        el.classList.toggle('cleared', state.cleared && tile.kind === 'goal');
         if (el.style.getPropertyValue('--r') !== String(r) ||
             el.style.getPropertyValue('--c') !== String(c)) {
           moved.push([el, r, c]);
