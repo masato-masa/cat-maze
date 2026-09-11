@@ -12,6 +12,12 @@ const tile = (spec: string, kind: Tile['kind'] = 'road', fixed = false, fish = f
 });
 
 describe('tileSvg', () => {
+  it('画像をいっさい使わない', () => {
+    const svg = tileSvg(tile('NESW', 'goal', true, true));
+    expect(svg).not.toContain('<img');
+    expect(svg).not.toContain('.png');
+  });
+
   it('道の無いタイルには通路 SVG を出さない', () => {
     expect(tileSvg(tile('X'))).not.toContain('tile-road-svg');
   });
@@ -27,15 +33,23 @@ describe('tileSvg', () => {
     expect(tileSvg(tile('NS'))).toContain('tile-road-outline');
   });
 
-  it('固定タイルには専用のクラスと画像が付く', () => {
+  it('道は形によらず同じ太さで描く', () => {
+    const svg = tileSvg(tile('NESW'));
+    expect((svg.match(/stroke-width="40"/g) ?? []).length).toBe(1);
+    expect((svg.match(/stroke-width="32"/g) ?? []).length).toBe(1);
+  });
+
+  it('固定タイルには専用のクラスが付く（画像は使わない）', () => {
     const svg = tileSvg(tile('NS', 'road', true));
     expect(svg).toContain('tile-fixed');
-    expect(svg).toContain('tile_fixed');
+    expect(svg).not.toContain('tile_fixed');
     expect(tileSvg(tile('NS'))).not.toContain('tile-fixed');
   });
 
-  it('ゴールには家の画像を描く', () => {
-    expect(tileSvg(tile('NS', 'goal'))).toContain('tile-goal');
+  it('ゴールには家を SVG で描く', () => {
+    const svg = tileSvg(tile('NS', 'goal'));
+    expect(svg).toContain('tile-goal');
+    expect(svg).toContain('tile-house-roof');
   });
 
   it('固定されたゴールも表現できる', () => {
@@ -44,8 +58,10 @@ describe('tileSvg', () => {
     expect(svg).toContain('tile-fixed');
   });
 
-  it('魚があれば魚の画像を描く', () => {
-    expect(tileSvg(tile('NS', 'road', false, true))).toContain('tile-fish');
+  it('魚があれば魚を SVG で描く', () => {
+    const svg = tileSvg(tile('NS', 'road', false, true));
+    expect(svg).toContain('tile-fish');
+    expect(svg).toContain('tile-fish-body');
     expect(tileSvg(tile('NS'))).not.toContain('tile-fish');
   });
 
