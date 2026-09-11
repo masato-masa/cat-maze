@@ -81,10 +81,6 @@
   pointer-events: none;
 }
 
-.grid-cell.reachable::after {
-  background: color-mix(in srgb, var(--reach) 62%, transparent);
-}
-
 .tile {
   transition: transform var(--anim) ease-out;
   pointer-events: auto;
@@ -182,38 +178,18 @@
   height: 36%;
 }
 
-/* ねこが歩いて行けるマスは、タイル種別を問わず同じ光エフェクトで示す
-   （タイル全体を暗く塗る方式だと分かりにくい、キラキラ画像とゴールの光り方が
-   バラバラで統一感がない、という指摘を受けてこの形にまとめた）。
-   ふだんは透明にしておき、.reachable が付いたときだけふわっと現れて明滅する。 */
-.tile-reach-glow {
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(
-    circle at 50% 50%,
-    color-mix(in srgb, var(--star) 90%, transparent) 0%,
-    color-mix(in srgb, var(--star) 45%, transparent) 45%,
-    transparent 72%
-  );
-  transition: opacity var(--anim) ease-out;
+/* 猫が歩いて行けるマスは、そのマスの道を明るくする。
+   以前は黄色い放射グラデを明滅させていたが、盤全体が点滅して見えた。
+   歩ける範囲が「明るい道として一本に繋がって見える」ほうが情報として正しい。 */
+.tile.reachable .tile-road-fill line,
+.tile.reachable .tile-road-fill circle {
+  stroke: var(--road-lit);
+  fill: var(--road-lit);
 }
 
-.tile.reachable .tile-reach-glow {
-  opacity: 1;
-  animation: reach-glow-pulse 1500ms ease-in-out infinite;
-}
-
-@keyframes reach-glow-pulse {
-  0%,
-  100% {
-    transform: scale(0.85);
-  }
-  50% {
-    transform: scale(1.15);
-  }
+.tile-road-fill line,
+.tile-road-fill circle {
+  transition: stroke var(--anim) var(--ease), fill var(--anim) var(--ease);
 }
 
 /* 移動可能（スライドできる）マス・ヒントの強調は、画像の上に重ねた枠で示す。

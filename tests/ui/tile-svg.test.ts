@@ -70,6 +70,10 @@ describe('tileSvg', () => {
     expect(svg).not.toMatch(/fill="#|stroke="#|fill="rgb|style="/);
   });
 
+  it('明滅する光の膜を持たない', () => {
+    expect(tileSvg(tile('NESW'))).not.toContain('tile-reach-glow');
+  });
+
   it('猫の画像を返す', () => {
     expect(catSvg()).toContain('cat-img');
     expect(catSvg()).toContain('cat.png');
