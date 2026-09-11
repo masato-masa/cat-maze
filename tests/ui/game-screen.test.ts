@@ -32,19 +32,25 @@ const key = (k: string): void => {
 const tile = (r: number, c: number): HTMLElement =>
   root.querySelector<HTMLElement>(`.tile-layer [data-r="${r}"][data-c="${c}"]`)!;
 
-/** jsdom には TouchEvent が無いので、必要なプロパティだけ持つイベントを作る。 */
-function touchEvent(type: string, points: { x: number; y: number; target?: EventTarget }[]): Event {
+/** jsdom には PointerEvent が無いので、必要なプロパティだけ持つイベントを作る。 */
+function pointerEvent(type: string, x: number, y: number): Event {
   const ev = new Event(type, { bubbles: true, cancelable: true });
-  const list = points.map((p) => ({ clientX: p.x, clientY: p.y, target: p.target ?? null }));
-  Object.defineProperty(ev, 'touches', { value: type === 'touchstart' ? list : [] });
-  Object.defineProperty(ev, 'changedTouches', { value: list });
+  Object.defineProperty(ev, 'clientX', { value: x });
+  Object.defineProperty(ev, 'clientY', { value: y });
+  Object.defineProperty(ev, 'isPrimary', { value: true });
   return ev;
+}
+
+/** el の上でタップする（=そのマスへ歩く）。7px 以内の移動はタップになる。 */
+function tap(el: HTMLElement): void {
+  el.dispatchEvent(pointerEvent('pointerdown', 100, 100));
+  el.dispatchEvent(pointerEvent('pointerup', 101, 100));
 }
 
 /** el の上でスワイプする（=そのマスのタイルを押す）。 */
 function swipe(el: HTMLElement): void {
-  el.dispatchEvent(touchEvent('touchstart', [{ x: 100, y: 100, target: el }]));
-  el.dispatchEvent(touchEvent('touchend', [{ x: 160, y: 104 }]));
+  el.dispatchEvent(pointerEvent('pointerdown', 100, 100));
+  el.dispatchEvent(pointerEvent('pointerup', 160, 104));
 }
 
 describe('対局画面', () => {
@@ -137,7 +143,7 @@ describe('対局画面', () => {
     open('W3-1');
     // (3,4) は歩いて行けるし押すこともできるマス。タップでは歩行が起きる。
     const before = q('.moves').textContent;
-    tile(3, 4).click();
+    tap(tile(3, 4));
     expect(before).toBe('0');
     expect(q('.moves').textContent).toBe('0');
     cleanup();
@@ -159,7 +165,7 @@ describe('対局画面', () => {
     const walkToSpy = vi.spyOn(GameSession.prototype, 'walkTo');
     const animSpy = vi.spyOn(BoardView.prototype, 'walkCatThrough');
     open('W3-1');
-    tile(3, 3).click();
+    tap(tile(3, 3));
     expect(walkToSpy).toHaveBeenCalledWith({ r: 3, c: 3 });
     expect(q('.moves').textContent).toBe('0'); // 歩行なので手数は増えない
     expect(animSpy).toHaveBeenCalledWith(

@@ -1,13 +1,12 @@
 // キーボードとスワイプの扱いは 2048 の js/keyboard_input_manager.js を元にしている。
-// イベントエミッタ、キーから方向への写像、修飾キーを無視する判定、
-// touchstart で始点を記録し touchend の dx/dy から方向を決めるスワイプ判定が該当する。
+// イベントエミッタ、キーから方向への写像、修飾キーを無視する判定が該当する。
 // 2048 の方向は 0=Up 1=Right 2=Down 3=Left で、本作の Dir(0=N 1=E 2=S 3=W) と一致する。
 // Copyright (c) 2014 Gabriele Cirulli — MIT License
 // https://github.com/gabrielecirulli/2048
 import type { Dir } from '../core/conn.ts';
 import type { Pos } from '../core/types.ts';
 
-export type InputEvent = 'walk' | 'slide' | 'undo' | 'restart' | 'back' | 'hint';
+export type InputEvent = 'walk' | 'tap' | 'slide' | 'undo' | 'restart' | 'back' | 'hint';
 
 const KEY_DIR: Record<string, Dir> = {
   ArrowUp: 0,
@@ -33,23 +32,20 @@ const KEY_ACTION: Record<string, InputEvent> = {
   '?': 'hint',
 };
 
-/** スワイプと判定する最小移動量（px）。2048 と同じ 10px。 */
-const SWIPE_THRESHOLD = 10;
+/**
+ * タップとドラッグを分ける閾値（px）。指はまっすぐ動かないので、
+ * 小さすぎるとタップがスライドに化ける。
+ */
+const DRAG_THRESHOLD = 7;
 
 export class InputManager {
   private listeners = new Map<InputEvent, ((d?: Dir | Pos) => void)[]>();
   private target: EventTarget;
-  private swipeEl: HTMLElement | null = null;
+  private pointerEl: HTMLElement | null = null;
   private startX = 0;
   private startY = 0;
   private startPos: Pos | null = null;
-  /**
-   * スワイプのあとにブラウザが click を出すことがある。
-   * そのまま通すと「歩く」と「スライド」が二重に起きてしまうので、
-   * 直後の 1 回だけ握りつぶす。次の touchstart で新しい操作が始まるため、
-   * 時間ではなく回数で打ち切るほうが後続のタップを巻き込まない。
-   */
-  private swallowNextClick = false;
+  private down = false;
 
   constructor(target: EventTarget) {
     this.target = target;
@@ -82,55 +78,55 @@ export class InputManager {
     }
   };
 
-  /** 盤面の上でのスワイプを歩行として扱う。 */
-  bindSwipe(el: HTMLElement): void {
-    this.swipeEl = el;
-    el.addEventListener('touchstart', this.onTouchStart, { passive: true });
-    el.addEventListener('touchend', this.onTouchEnd, { passive: true });
-    // タップ処理より先に見たいので捕捉フェーズで受ける
-    el.addEventListener('click', this.onClickCapture, true);
+  /**
+   * 盤面の上のポインタ操作。合成 click を待たずに pointerup で確定させる。
+   * click 経由にすると、指を離してからブラウザが click を作るまでの分だけ
+   * 反応が遅れて「効かなかった」ように感じる。
+   */
+  bindPointer(el: HTMLElement): void {
+    this.pointerEl = el;
+    el.addEventListener('pointerdown', this.onPointerDown);
+    el.addEventListener('pointerup', this.onPointerUp);
+    el.addEventListener('pointercancel', this.onPointerCancel);
   }
 
-  private onClickCapture = (ev: Event): void => {
-    if (!this.swallowNextClick) return;
-    this.swallowNextClick = false;
-    ev.stopPropagation();
-    ev.preventDefault();
-  };
-
-  private onTouchStart = (ev: TouchEvent): void => {
-    this.swallowNextClick = false; // 新しい操作の始まり
-    if (ev.touches.length > 1) return;
-    const t = ev.touches[0];
-    if (!t) return;
-    this.startX = t.clientX;
-    this.startY = t.clientY;
-    const el = (t.target as HTMLElement | null)?.closest<HTMLElement>('[data-r]') ?? null;
+  private onPointerDown = (ev: Event): void => {
+    const pe = ev as PointerEvent;
+    if (pe.isPrimary === false) return;
+    this.down = true;
+    this.startX = pe.clientX;
+    this.startY = pe.clientY;
+    const el = (pe.target as HTMLElement | null)?.closest<HTMLElement>('[data-r]') ?? null;
     this.startPos = el ? { r: Number(el.dataset['r']), c: Number(el.dataset['c']) } : null;
   };
 
-  /**
-   * スワイプはタイルを押す操作として扱う。押す向きは穴の位置から一意に決まるので、
-   * スワイプ自体の向きは見ず、指を下ろしたマス（=押したいタイル）だけを渡す。
-   */
-  private onTouchEnd = (ev: TouchEvent): void => {
-    if (ev.touches.length > 0) return;
-    const t = ev.changedTouches[0];
-    if (!t) return;
-    const dx = t.clientX - this.startX;
-    const dy = t.clientY - this.startY;
-    if (Math.max(Math.abs(dx), Math.abs(dy)) <= SWIPE_THRESHOLD) return; // タップはクリック側で処理する
-    this.swallowNextClick = true;
-    if (this.startPos) this.emit('slide', this.startPos);
+  private onPointerUp = (ev: Event): void => {
+    if (!this.down) return;
+    this.down = false;
+    const pe = ev as PointerEvent;
+    const from = this.startPos;
+    this.startPos = null;
+    if (!from) return;
+    const dx = pe.clientX - this.startX;
+    const dy = pe.clientY - this.startY;
+    // 押す向きは穴の位置から一意に決まるので、ドラッグの向きは見ない。
+    // 指を下ろしたマス（=押したいタイル）だけを渡す。
+    if (Math.max(Math.abs(dx), Math.abs(dy)) > DRAG_THRESHOLD) this.emit('slide', from);
+    else this.emit('tap', from);
+  };
+
+  private onPointerCancel = (): void => {
+    this.down = false;
+    this.startPos = null;
   };
 
   destroy(): void {
     this.target.removeEventListener('keydown', this.onKeyDown as EventListener);
-    if (this.swipeEl) {
-      this.swipeEl.removeEventListener('touchstart', this.onTouchStart as EventListener);
-      this.swipeEl.removeEventListener('touchend', this.onTouchEnd as EventListener);
-      this.swipeEl.removeEventListener('click', this.onClickCapture, true);
-      this.swipeEl = null;
+    if (this.pointerEl) {
+      this.pointerEl.removeEventListener('pointerdown', this.onPointerDown);
+      this.pointerEl.removeEventListener('pointerup', this.onPointerUp);
+      this.pointerEl.removeEventListener('pointercancel', this.onPointerCancel);
+      this.pointerEl = null;
     }
     this.listeners.clear();
   }

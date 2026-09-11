@@ -156,17 +156,19 @@ export function renderGameScreen(
     draw();
   }
 
-  view.onCellClick((p) => {
+  input.on('tap', (p) => {
+    if (p === undefined) return;
+    const target = p as Pos;
     if (!message.hidden || walking) return;
     const s = session.current;
     // タップは常に歩行。到達領域外なら何もしない。
-    if (!reachableSet(s).has(idx(s.board, p.r, p.c))) return;
-    const path = shortestPath(s, p);
+    if (!reachableSet(s).has(idx(s.board, target.r, target.c))) return;
+    const path = shortestPath(s, target);
     if (!path || path.length === 0) return;
     const waypoints = pathPositions(s.cat, path);
     walking = true;
     view.setCatAnimated(false);
-    act(() => session.walkTo(p));
+    act(() => session.walkTo(target));
     view.walkCatThrough(waypoints, WALK_STEP_MS).then(() => {
       view.setCatAnimated(true);
       walking = false;
@@ -195,7 +197,7 @@ export function renderGameScreen(
   });
   input.on('back', () => deps.go({ screen: 'select' }));
   input.on('hint', () => showHint());
-  input.bindSwipe(boardRoot);
+  input.bindPointer(boardRoot);
 
   function showHint(): void {
     const sol = solveFrom(session.current, def!.optimalMoves + 3);

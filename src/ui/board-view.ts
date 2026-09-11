@@ -24,7 +24,6 @@ export class BoardView {
   private catEl: HTMLElement;
   private cat: CatSprite;
   private tiles = new Map<number, HTMLElement>();
-  private clickCb: ((p: Pos) => void) | null = null;
   private width: number;
   private height: number;
   private first = true;
@@ -66,19 +65,6 @@ export class BoardView {
     this.cat = new CatSprite();
     this.catEl.append(this.cat.el);
     this.actorLayer.appendChild(this.catEl);
-
-    root.addEventListener('click', this.onClick);
-  }
-
-  private onClick = (ev: Event): void => {
-    if (!this.clickCb) return;
-    const el = (ev.target as HTMLElement).closest<HTMLElement>('[data-r]');
-    if (!el) return;
-    this.clickCb({ r: Number(el.dataset['r']), c: Number(el.dataset['c']) });
-  };
-
-  onCellClick(cb: (p: Pos) => void): void {
-    this.clickCb = cb;
   }
 
   private place(el: HTMLElement, r: number, c: number): void {
@@ -226,8 +212,6 @@ export class BoardView {
 
   destroy(): void {
     this.cat.destroy();
-    this.root.removeEventListener('click', this.onClick);
-    this.clickCb = null;
     this.tiles.clear();
     this.root.innerHTML = '';
   }
