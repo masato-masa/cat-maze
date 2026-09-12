@@ -10,7 +10,7 @@ import type { Pos } from '../../core/types.ts';
 import { BoardView } from '../board-view.ts';
 import { CatSprite } from '../cat-sprite.ts';
 import { InputManager } from '../input.ts';
-import { iconBack, iconGear, iconHelp, iconHint, iconRetry, iconUndo } from '../icons.ts';
+import { iconBack, iconGear, iconHelp, iconHint, iconReset, iconUndo } from '../icons.ts';
 import { openHelpSheet, openSettingsSheet } from '../sheets.ts';
 import { buzz, play } from '../sfx.ts';
 import type { Route } from '../router.ts';
@@ -48,9 +48,10 @@ export function renderGameScreen(
             <button class="icon-btn back-btn" type="button" aria-label="もどる">${iconBack()}</button>
           </div>
           <h1 class="title">${def.name}</h1>
+          <!-- 並びは ? が左、設定が右。4 つのゲームで同じにしてある。 -->
           <div class="header-actions">
-            <button class="icon-btn settings-btn" type="button" aria-label="設定">${iconGear()}</button>
             <button class="icon-btn help-btn" type="button" aria-label="遊びかた">${iconHelp()}</button>
+            <button class="icon-btn settings-btn" type="button" aria-label="設定">${iconGear()}</button>
           </div>
         </div>
 
@@ -76,7 +77,7 @@ export function renderGameScreen(
 
       <footer class="footer">
         <button class="tool undo-btn" type="button" aria-label="もどす">${iconUndo()}</button>
-        <button class="tool retry-btn" type="button" aria-label="やりなおし">${iconRetry()}</button>
+        <button class="tool retry-btn" type="button" aria-label="やりなおし">${iconReset()}</button>
         <button class="tool hint-btn" type="button" aria-label="ヒント">${iconHint()}</button>
       </footer>
 
