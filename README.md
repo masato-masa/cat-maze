@@ -96,8 +96,8 @@ src/
 
 ## ドキュメント
 
-- 設計仕様書: [docs/superpowers/specs/2026-09-05-cat-maze-design.md](docs/superpowers/specs/2026-09-05-cat-maze-design.md)
-- 実装計画: [docs/superpowers/plans/2026-09-05-cat-maze.md](docs/superpowers/plans/2026-09-05-cat-maze.md)
+- 設計仕様書: `Obsidian:Projects/cat-maze/superpowers/specs/2026-09-05-cat-maze-design.md`
+- 実装計画: `Obsidian:Projects/cat-maze/superpowers/plans/2026-09-05-cat-maze.md`
 
 ## ライセンスと流用元
 
