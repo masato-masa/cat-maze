@@ -95,6 +95,44 @@ export class BoardView {
     if (avail > 0) this.root.style.setProperty('--avail-h', `${avail}px`);
   }
 
+  /**
+   * クリアの演出。家から光の粒が弾け、タイルが家に近い順に波打つ。
+   * 家と猫の跳ね（mark-hop / cat-hop）と同時に始まり、約 1.2 秒で終わる。
+   */
+  celebrate(): void {
+    const goal = this.tileLayer.querySelector<HTMLElement>('.tile.cleared');
+    if (!goal || this.reduceMotion) return;
+    const gr = Number(goal.dataset['r']);
+    const gc = Number(goal.dataset['c']);
+    for (const el of this.tiles.values()) {
+      const d = Math.abs(Number(el.dataset['r']) - gr) + Math.abs(Number(el.dataset['c']) - gc);
+      el.style.setProperty('--wave', String(d));
+    }
+    this.root.classList.remove('celebrate');
+    void this.root.offsetWidth;
+    this.root.classList.add('celebrate');
+    const burst = document.createElement('div');
+    burst.className = 'burst';
+    burst.style.setProperty('--r', String(gr));
+    burst.style.setProperty('--c', String(gc));
+    const N = 14;
+    for (let i = 0; i < N; i++) {
+      const p = document.createElement('span');
+      p.className = i % 3 === 0 ? 'spark heart' : 'spark';
+      const a = (i / N) * Math.PI * 2 + Math.random() * 0.4;
+      const dist = 0.9 + Math.random() * 0.7;
+      p.style.setProperty('--dx', (Math.cos(a) * dist).toFixed(3));
+      p.style.setProperty('--dy', (Math.sin(a) * dist - 0.3).toFixed(3));
+      p.style.setProperty('--delay', `${Math.round(Math.random() * 120)}ms`);
+      burst.appendChild(p);
+    }
+    this.actorLayer.appendChild(burst);
+    window.setTimeout(() => {
+      burst.remove();
+      this.root.classList.remove('celebrate');
+    }, 1600);
+  }
+
   private place(el: HTMLElement, r: number, c: number): void {
     el.style.setProperty('--r', String(r));
     el.style.setProperty('--c', String(c));

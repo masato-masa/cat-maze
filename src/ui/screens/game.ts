@@ -23,6 +23,10 @@ const NOSTAR = '☆';
 
 /** 1 マス歩くアニメーションの間隔。base.css の --anim-cat と合わせる。 */
 const WALK_STEP_MS = 120;
+/** クリアしてから結果カードを出すまで。家と猫の跳ね（520ms × 2）と光の粒を見せ切る長さ。 */
+const CLEAR_POPUP_DELAY_MS = 1400;
+/** 星が 1 つずつ出る間隔。game.css の star-pop の animation-delay と同じ値。 */
+const STAR_STEP_MS = 320;
 
 export function renderGameScreen(
   root: HTMLElement,
@@ -120,6 +124,18 @@ export function renderGameScreen(
   /** クリアのカードに出す猫。盤の上の猫とは別個体（表情の連動を避ける）。
       CatSprite はタイマーを持つので、画面を離れるとき必ず destroy する。 */
   const bannerCats: CatSprite[] = [];
+  /** クリア後の結果カード・星の音を出す setTimeout の ID。やりなおし・画面離脱で止める。 */
+  let clearTimers: number[] = [];
+
+  /** 盤への操作を受け付けないとき。結果カードが出ている間と、クリア後にカードを待つ演出の間。 */
+  function boardLocked(): boolean {
+    return !message.hidden || session.current.cleared;
+  }
+
+  function clearClearTimers(): void {
+    for (const id of clearTimers) window.clearTimeout(id);
+    clearTimers = [];
+  }
 
   function clearWalkTimers(): void {
     for (const id of walkTimers) window.clearTimeout(id);
@@ -190,12 +206,14 @@ export function renderGameScreen(
       play('clear');
       buzz([40, 60, 40]);
       cat.setMood('happy');
+      view.celebrate();
     }
     // クリア状態から戻った（やりなおし等）ときは、笑顔で固定されたまま
     // （setMood('happy') は ms 無しなので恒久的）になるのを直す。
     // 'idle' に戻さないと、mood が 'idle' のときしか回らない
     // scheduleBlink() のせいで、この画面を離れるまで一度もまばたきしない。
     if (!s.cleared && prevCleared) {
+      clearClearTimers();
       cat.setMood('idle');
       cat.faceWest(false);
     }
@@ -206,7 +224,8 @@ export function renderGameScreen(
       recorded = true;
       const stars = starsFor(def!, s.moves);
       deps.store.record(def!.id, stars, s.moves);
-      showClear(stars, s.moves);
+      // 盤面の演出（家の跳ね・光の粒・波）を見せてから結果を出す。
+      clearTimers.push(window.setTimeout(() => showClear(stars, s.moves), CLEAR_POPUP_DELAY_MS));
     }
     updateControls();
   }
@@ -226,6 +245,8 @@ export function renderGameScreen(
       el.textContent = i < stars ? STAR : NOSTAR;
       el.style.setProperty('--i', String(i));
       starsEl.appendChild(el);
+      // 星は 1 つずつ、取れた星だけ音を鳴らす（少しずつ高く）。CSS の star-pop の遅れと合わせる。
+      if (i < stars) clearTimers.push(window.setTimeout(() => play('fish', 1 + i * 0.12), 260 + i * STAR_STEP_MS));
     }
     q('.message-moves').textContent =
       stars === 3 ? `${moves} 手 — さいたん!` : `${moves} 手（さいたん ${def!.optimalMoves}）`;
@@ -274,12 +295,12 @@ export function renderGameScreen(
       queued = null;
       // クリア済みなら先行入力は捨てる。到達可能性(reach)だけでなく、
       // 「今はもうタップを受け付けない」という上位の状態も見る必要がある。
-      if (next && message.hidden) walkTo(next);
+      if (next && !boardLocked()) walkTo(next);
     });
   }
 
   input.on('tap', (p) => {
-    if (p === undefined || !message.hidden) return;
+    if (p === undefined || boardLocked()) return;
     const target = p as Pos;
     if (walking) {
       queued = target;
@@ -289,7 +310,7 @@ export function renderGameScreen(
   });
 
   input.on('walk', (d) => {
-    if (!message.hidden || walking || d === undefined) return;
+    if (boardLocked() || walking || d === undefined) return;
     // タップの歩行不可（reach.has の事前チェック）と対称にする。やじるしキーで
     // 壁に向かっても、タップと同じ「行けない」反応（音・振動・悲しい顔）を返す。
     if (!canWalk(session.current, d as Dir)) {
@@ -299,7 +320,7 @@ export function renderGameScreen(
     act(() => session.walk(d as Dir));
   });
   input.on('slide', (p) => {
-    if (!message.hidden || walking || p === undefined) return;
+    if (boardLocked() || walking || p === undefined) return;
     const target = p as Pos;
     // タップ・やじるしキーと対称に、押せないマスへのスワイプにも
     // 「行けない」反応（音・振動・悲しい顔）を返す。
@@ -363,6 +384,7 @@ export function renderGameScreen(
 
   return () => {
     stopCatWalk();
+    clearClearTimers();
     input.destroy();
     view.destroy();
     for (const c of bannerCats) c.destroy();

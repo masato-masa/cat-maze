@@ -4,7 +4,7 @@
 // 画面の再描画（renderXxxScreen）とは独立させて、どの画面からも同じ形で呼べる。
 
 import { ALL_LEVELS } from '../levels/index.ts';
-import { isMuted, play, setMuted } from './sfx.ts';
+import { isBgmOn, isMuted, play, setBgmOn, setMuted } from './sfx.ts';
 import type { ProgressStore } from './storage.ts';
 
 /** シートを 1 枚開く。戻り値を呼ぶと閉じる。 */
@@ -59,9 +59,14 @@ export function openSettingsSheet(): void {
   openSheet(
     `<h2 class="sheet-title">設定</h2>
      <div class="sheet-row static">
-       <span>音</span>
+       <span>効果音</span>
        <button class="switch mute-toggle" type="button" role="switch"
-               aria-checked="${!isMuted()}" aria-label="音の入切"></button>
+               aria-checked="${!isMuted()}" aria-label="効果音の入切"></button>
+     </div>
+     <div class="sheet-row static">
+       <span>BGM</span>
+       <button class="switch bgm-toggle" type="button" role="switch"
+               aria-checked="${isBgmOn()}" aria-label="BGM の入切"></button>
      </div>
      <button class="sheet-btn sheet-close" type="button">とじる</button>`,
     (root) => {
@@ -72,6 +77,12 @@ export function openSettingsSheet(): void {
         toggle.setAttribute('aria-checked', String(!next));
         // 音を戻した合図として 1 音鳴らす。無音のまま戻ると効いたか分からない。
         if (!next) play('fish');
+      });
+      const bgm = root.querySelector<HTMLButtonElement>('.bgm-toggle')!;
+      bgm.addEventListener('click', () => {
+        const next = !isBgmOn();
+        setBgmOn(next);
+        bgm.setAttribute('aria-checked', String(next));
       });
     },
   );

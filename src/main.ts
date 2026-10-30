@@ -8,6 +8,7 @@ import { ProgressStore, browserKV } from './ui/storage.ts';
 import { renderGameScreen } from './ui/screens/game.ts';
 import { renderHomeScreen } from './ui/screens/home.ts';
 import { renderSelectScreen } from './ui/screens/select.ts';
+import { startBgm } from './ui/sfx.ts';
 
 const app = document.querySelector<HTMLElement>('#app')!;
 const store = new ProgressStore(browserKV());
@@ -37,3 +38,5 @@ router.onChange((route) => {
 });
 
 router.start();
+// 自動再生は止められることが多いので、その場合は最初の操作のあとに流れ始める。
+startBgm();

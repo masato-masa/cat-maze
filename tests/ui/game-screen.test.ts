@@ -97,15 +97,20 @@ describe('対局画面', () => {
   });
 
   it('クリアすると星と成績が出て、進捗が保存される', () => {
+    vi.useFakeTimers();
     open('W1-1');
     swipe(tile(1, 0));
     key('ArrowRight');
     key('ArrowRight');
+    // 盤面の演出を見せてから結果カードが出る
+    expect(q('.game-message').hidden).toBe(true);
+    vi.advanceTimersByTime(1400);
     expect(q('.game-message').hidden).toBe(false);
     expect(q('.stars').querySelectorAll('.star.on')).toHaveLength(3);
     expect(store.getStars('W1-1')).toBe(3);
     expect(store.bestMoves('W1-1')).toBe(1);
     cleanup();
+    vi.useRealTimers();
   });
 
   it('Undo でスライド前に戻る', () => {
@@ -318,6 +323,7 @@ describe('猫の反応', () => {
 
 describe('クリアのカード', () => {
   it('クリアのカードに嬉しい顔の猫が出る', () => {
+    vi.useFakeTimers();
     open('W1-1');
     // W1-1 は 1 手（1 回のスライド）で解ける。スライドしただけでは猫はまだ
     // ゴールの上にいないので、そこへ歩かせて初めて cleared になる
@@ -327,9 +333,11 @@ describe('クリアのカード', () => {
     swipeCell(Number(hinted.dataset['r']), Number(hinted.dataset['c']));
     const goal = root.querySelector<HTMLElement>('.tile-layer .tile[data-kind="goal"]')!;
     tapCell(Number(goal.dataset['r']), Number(goal.dataset['c']));
+    vi.advanceTimersByTime(1400);
     const img = q('.message-card').querySelector('img')!;
     expect(img.getAttribute('src')).toContain('happy');
     cleanup();
+    vi.useRealTimers();
   });
 });
 
