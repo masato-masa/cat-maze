@@ -384,7 +384,10 @@ export function renderGameScreen(
     message.hidden = true;
     act(() => session.reset());
   });
-  q('.select-btn').addEventListener('click', () => deps.go({ screen: 'select' }));
+  // きょうの めいろはステージ一覧に無いので、カードからはホームへ戻す。
+  const daily = isDailyId(def.id);
+  if (daily) q('.select-btn').textContent = 'ホームへ';
+  q('.select-btn').addEventListener('click', () => deps.go(daily ? { screen: 'home' } : { screen: 'select' }));
 
   draw();
 

@@ -137,6 +137,10 @@ describe('対局画面', () => {
       }
     }
     expect(store.getStars(id)).toBe(3);
+    await new Promise((r) => setTimeout(r, 1500));
+    expect(q('.select-btn').textContent).toBe('ホームへ');
+    q('.select-btn').click();
+    expect(went).toEqual({ screen: 'home' });
     cleanup();
   });
 
