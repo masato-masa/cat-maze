@@ -4,6 +4,8 @@ import { starsFor } from '../../core/rules.ts';
 import { idx } from '../../core/board.ts';
 import { getLevel, nextLevelId, worldOf } from '../../levels/index.ts';
 import { isDailyId } from '../../levels/daily.ts';
+import { endlessNumber, isEndlessId } from '../../levels/endless.ts';
+import { ensureLevel } from '../../levels/loader.ts';
 import { solveFrom } from '../../solver/search.ts';
 import { delta } from '../../core/conn.ts';
 import type { Dir } from '../../core/conn.ts';
@@ -67,7 +69,7 @@ export function renderGameScreen(
 
         <div class="status-bar">
           <span class="stat">
-            <span class="stat-label">${world ? `${world.name} ${def.id}` : isDailyId(def.id) ? dailyLabel(def.id) : def.id}</span>
+            <span class="stat-label">${world ? `${world.name} ${def.id}` : isDailyId(def.id) ? dailyLabel(def.id) : isEndlessId(def.id) ? `むげん ${endlessNumber(def.id)}` : def.id}</span>
           </span>
           <span class="stat">
             <span class="stat-label">てすう</span>
@@ -384,12 +386,18 @@ export function renderGameScreen(
     message.hidden = true;
     act(() => session.reset());
   });
-  // きょうの めいろはステージ一覧に無いので、カードからはホームへ戻す。
-  const daily = isDailyId(def.id);
+  // きょうの めいろ・むげんはステージ一覧に無いので、カードからはホームへ戻す。
+  const daily = isDailyId(def.id) || isEndlessId(def.id);
   if (daily) q('.select-btn').textContent = 'ホームへ';
   q('.select-btn').addEventListener('click', () => deps.go(daily ? { screen: 'home' } : { screen: 'select' }));
 
   draw();
+
+  // むげんは、遊んでいるあいだに次の面を裏で作っておく（「つぎへ」で待たせない）。
+  if (isEndlessId(def.id)) {
+    const next = nextLevelId(def.id);
+    if (next) void ensureLevel(next);
+  }
 
   return () => {
     stopCatWalk();

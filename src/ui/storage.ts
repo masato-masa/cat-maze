@@ -133,6 +133,13 @@ export class ProgressStore {
     return Object.keys(this.data).filter((id) => /^D-\d{8}$/.test(id)).length;
   }
 
+  /** むげんで、1 面目から続けてクリアした一番先の番号。0 ならまだ遊んでいない。 */
+  endlessBest(): number {
+    let n = 0;
+    while (this.isCleared(`E-${n + 1}`)) n++;
+    return n;
+  }
+
   /** 「つづきから」で開くステージ。未クリアのうち最初のもの。 */
   firstUnclearedId(): string {
     const found = ALL_LEVELS.find((l) => !this.isCleared(l.id));

@@ -1,5 +1,6 @@
 import { ALL_LEVELS } from '../../levels/index.ts';
 import { DAILY_UNLOCK_AFTER, dailyId } from '../../levels/daily.ts';
+import { endlessId } from '../../levels/endless.ts';
 import { catSvg } from '../cat-sprite.ts';
 import { iconGear } from '../icons.ts';
 import { openDevSheet, openSettingsSheet } from '../sheets.ts';
@@ -21,6 +22,12 @@ export function renderHomeScreen(root: HTMLElement, deps: ScreenDeps): () => voi
     const dailyOpen = store.isCleared(DAILY_UNLOCK_AFTER);
     const dailyDone = store.isCleared(today);
     const days = store.dailyDays();
+    const best = store.endlessBest();
+    const endlessNote = !dailyOpen
+      ? 'ステージ 12 まで すすむと あそべる'
+      : best > 0
+        ? `${best} めんまで クリア`
+        : 'めいろが どこまでも つづく';
     const dailyNote = !dailyOpen
       ? 'ステージ 12 まで すすむと あそべる'
       : dailyDone
@@ -47,6 +54,10 @@ export function renderHomeScreen(root: HTMLElement, deps: ScreenDeps): () => voi
               きょうの めいろ
               <span class="home-btn-sub">${dailyNote}</span>
             </button>
+            <button class="home-btn daily-btn endless-btn" type="button"${dailyOpen ? '' : ' disabled'}>
+              むげん
+              <span class="home-btn-sub">${endlessNote}</span>
+            </button>
           </div>
 
           <p class="home-progress">★ ${total} / ${ALL_LEVELS.length * 3}${days > 0 ? ` ・ きょうの めいろ ${days} 日` : ''}</p>
@@ -64,6 +75,7 @@ export function renderHomeScreen(root: HTMLElement, deps: ScreenDeps): () => voi
     const t = ev.target as HTMLElement;
     if (t.closest('.resume-btn')) deps.go({ screen: 'play', levelId: store.firstUnclearedId() });
     else if (t.closest('.select-btn')) deps.go({ screen: 'select' });
+    else if (t.closest('.endless-btn:not([disabled])')) deps.go({ screen: 'play', levelId: endlessId(store.endlessBest() + 1) });
     else if (t.closest('.daily-btn:not([disabled])')) deps.go({ screen: 'play', levelId: dailyId() });
     else if (t.closest('.settings-btn')) openSettingsSheet();
     else if (t.closest('.dev-pill')) openDevSheet({ store, refresh: draw });

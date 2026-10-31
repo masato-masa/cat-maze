@@ -1,5 +1,6 @@
 import type { LevelDef } from '../core/types.ts';
 import { dailyLevel, isDailyId } from './daily.ts';
+import { endlessId, endlessLevel, endlessNumber, isEndlessId } from './endless.ts';
 import { W1 } from './w1.ts';
 import { W2 } from './w2.ts';
 import { W3 } from './w3.ts';
@@ -18,15 +19,28 @@ export const WORLDS: World[] = [
 
 export const ALL_LEVELS: LevelDef[] = WORLDS.flatMap((w) => w.levels);
 
-const dailyCache = new Map<string, LevelDef>();
+const madeCache = new Map<string, LevelDef>();
 
-/** "D-20261101" のような日付の ID は、その日の「きょうの めいろ」を作って返す。 */
+/**
+ * "D-20261101"（きょうの めいろ）と "E-12"（むげん）は、その場で作って返す。
+ * むげんの上の段は重いので、画面からは loader.ts の ensureLevel で先に作っておく。
+ */
 export function getLevel(id: string): LevelDef | undefined {
-  if (isDailyId(id)) {
-    if (!dailyCache.has(id)) dailyCache.set(id, dailyLevel(id));
-    return dailyCache.get(id);
+  if (isDailyId(id) || isEndlessId(id)) {
+    if (!madeCache.has(id)) {
+      madeCache.set(id, isDailyId(id) ? dailyLevel(id) : endlessLevel(endlessNumber(id)));
+    }
+    return madeCache.get(id);
   }
   return ALL_LEVELS.find((l) => l.id === id);
+}
+
+export function hasCachedLevel(id: string): boolean {
+  return madeCache.has(id);
+}
+
+export function primeLevel(id: string, def: LevelDef): void {
+  madeCache.set(id, def);
 }
 
 export function levelIndex(id: string): number {
@@ -34,6 +48,7 @@ export function levelIndex(id: string): number {
 }
 
 export function nextLevelId(id: string): string | null {
+  if (isEndlessId(id)) return endlessId(endlessNumber(id) + 1);
   const i = levelIndex(id);
   if (i < 0 || i + 1 >= ALL_LEVELS.length) return null;
   return ALL_LEVELS[i + 1]!.id;

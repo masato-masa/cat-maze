@@ -113,6 +113,15 @@ describe('ホーム画面', () => {
     expect(root.querySelector('.home-progress')!.textContent).toContain(`★ 2 / `);
   });
 
+  it('むげんは続きの番号から始まる', () => {
+    store.record('W2-6', 2, 9);
+    store.record('E-1', 3, 2);
+    renderHomeScreen(root, { store, go });
+    expect(root.querySelector('.endless-btn')!.textContent).toContain('1 めんまで クリア');
+    (root.querySelector('.endless-btn') as HTMLElement).click();
+    expect(went).toEqual({ screen: 'play', levelId: 'E-2' });
+  });
+
   it('総獲得星数を出す', () => {
     store.record('W1-1', 3, 1);
     store.record('W1-2', 2, 3);
