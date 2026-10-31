@@ -45,10 +45,10 @@ export function tierFor(n: number): Tier {
 
 /** 段が上がる最初の番号と、そのとき出す一言。無限の面にも節目を見せる（調査 9・P12）。 */
 const TIER_NOTES: Record<number, string> = {
-  6: 'さかなが でるよ',
-  13: 'ばんが ひろくなった',
-  26: 'すこし ながい めいろ',
-  51: 'ここからが ほんばん',
+  6: 'さかな とうじょう',
+  13: 'ひろい ばん',
+  26: 'ながい めいろ',
+  51: 'ほんばん',
 };
 
 export function tierNote(n: number): string | null {

@@ -24,10 +24,10 @@ function dailyLabel(id: string): string {
   return `${Number(id.slice(6, 8))}/${Number(id.slice(8, 10))}`;
 }
 
-/** むげんの 2 行目。段が上がる面だけ一言を添える。 */
+/** むげんの 2 行目。番号はタイトルに出ているので、段が上がる面の一言だけ。
+    魚の表示と並んでも 1 行に収まる長さにする（折り返すと盤が下にずれる）。 */
 function endlessLabel(n: number): string {
-  const note = tierNote(n);
-  return note ? `むげん ${n} ・ ${note}` : `むげん ${n}`;
+  return tierNote(n) ?? '';
 }
 
 export type ScreenDeps = { store: ProgressStore; go: (r: Route) => void };
@@ -54,6 +54,13 @@ export function renderGameScreen(
   }
 
   const world = worldOf(levelId);
+  const placeLabel = world
+    ? `${world.name} ${def.id}`
+    : isDailyId(def.id)
+      ? dailyLabel(def.id)
+      : isEndlessId(def.id)
+        ? endlessLabel(endlessNumber(def.id))
+        : def.id;
   const session = new GameSession(def);
   let hint: Pos | null = null;
 
@@ -74,8 +81,8 @@ export function renderGameScreen(
         </div>
 
         <div class="status-bar">
-          <span class="stat">
-            <span class="stat-label">${world ? `${world.name} ${def.id}` : isDailyId(def.id) ? dailyLabel(def.id) : isEndlessId(def.id) ? endlessLabel(endlessNumber(def.id)) : def.id}</span>
+          <span class="stat"${placeLabel ? '' : ' hidden'}>
+            <span class="stat-label">${placeLabel}</span>
           </span>
           <span class="stat">
             <span class="stat-label">てすう</span>

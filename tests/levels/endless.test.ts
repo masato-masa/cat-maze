@@ -36,7 +36,7 @@ describe('むげん', () => {
   });
 
   it('段が上がる面だけ一言がある', () => {
-    expect(tierNote(13)).toBe('ばんが ひろくなった');
+    expect(tierNote(13)).toBe('ひろい ばん');
     expect(tierNote(14)).toBeNull();
     // 一言の面で段が本当に変わっている
     for (const n of [6, 13, 26, 51]) expect(tierFor(n)).not.toEqual(tierFor(n - 1));
