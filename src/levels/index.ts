@@ -1,4 +1,5 @@
 import type { LevelDef } from '../core/types.ts';
+import { dailyLevel, isDailyId } from './daily.ts';
 import { W1 } from './w1.ts';
 import { W2 } from './w2.ts';
 import { W3 } from './w3.ts';
@@ -17,7 +18,14 @@ export const WORLDS: World[] = [
 
 export const ALL_LEVELS: LevelDef[] = WORLDS.flatMap((w) => w.levels);
 
+const dailyCache = new Map<string, LevelDef>();
+
+/** "D-20261101" のような日付の ID は、その日の「きょうの めいろ」を作って返す。 */
 export function getLevel(id: string): LevelDef | undefined {
+  if (isDailyId(id)) {
+    if (!dailyCache.has(id)) dailyCache.set(id, dailyLevel(id));
+    return dailyCache.get(id);
+  }
   return ALL_LEVELS.find((l) => l.id === id);
 }
 

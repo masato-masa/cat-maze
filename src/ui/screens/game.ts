@@ -3,6 +3,7 @@ import { GameSession, canWalk, reachableSet, shortestPath } from '../../core/gam
 import { starsFor } from '../../core/rules.ts';
 import { idx } from '../../core/board.ts';
 import { getLevel, nextLevelId, worldOf } from '../../levels/index.ts';
+import { isDailyId } from '../../levels/daily.ts';
 import { solveFrom } from '../../solver/search.ts';
 import { delta } from '../../core/conn.ts';
 import type { Dir } from '../../core/conn.ts';
@@ -15,6 +16,11 @@ import { openHelpSheet, openSettingsSheet } from '../sheets.ts';
 import { buzz, play } from '../sfx.ts';
 import type { Route } from '../router.ts';
 import type { ProgressStore } from '../storage.ts';
+
+/** "D-20261101" → "11/1"。 */
+function dailyLabel(id: string): string {
+  return `${Number(id.slice(6, 8))}/${Number(id.slice(8, 10))}`;
+}
 
 export type ScreenDeps = { store: ProgressStore; go: (r: Route) => void };
 
@@ -61,7 +67,7 @@ export function renderGameScreen(
 
         <div class="status-bar">
           <span class="stat">
-            <span class="stat-label">${world ? world.name : ''} ${def.id}</span>
+            <span class="stat-label">${world ? `${world.name} ${def.id}` : isDailyId(def.id) ? dailyLabel(def.id) : def.id}</span>
           </span>
           <span class="stat">
             <span class="stat-label">てすう</span>

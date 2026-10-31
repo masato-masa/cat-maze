@@ -112,3 +112,12 @@
   filter: grayscale(1);
   opacity: 0.6;
 }
+
+/* きょうの めいろ。閉じているときは押せないことだけ伝わればよい。 */
+.home-btn.daily-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.home-btn.daily-btn:disabled:active {
+  transform: none;
+}

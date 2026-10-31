@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderSelectScreen } from '../../src/ui/screens/select.ts';
 import { renderHomeScreen } from '../../src/ui/screens/home.ts';
+import { dailyId } from '../../src/levels/daily.ts';
 import { ProgressStore, mapKV } from '../../src/ui/storage.ts';
 import { ALL_LEVELS, WORLDS } from '../../src/levels/index.ts';
 import type { Route } from '../../src/ui/router.ts';
@@ -91,6 +92,25 @@ describe('ホーム画面', () => {
     expect(root.querySelector('.resume-btn')!.textContent!.trim()).toBe('つづきから');
     (root.querySelector('.resume-btn') as HTMLElement).click();
     expect(went).toEqual({ screen: 'play', levelId: 'W1-2' });
+  });
+
+  it('きょうの めいろは W2 を終えるまで押せない', () => {
+    renderHomeScreen(root, { store, go });
+    const btn = root.querySelector<HTMLButtonElement>('.daily-btn')!;
+    expect(btn.disabled).toBe(true);
+    btn.click();
+    expect(went).toBeNull();
+  });
+
+  it('W2 を終えると、きょうの めいろへ行ける。クリアした日数が出る', () => {
+    store.record('W2-6', 2, 9);
+    store.record('D-20261031', 3, 5);
+    renderHomeScreen(root, { store, go });
+    (root.querySelector('.daily-btn') as HTMLElement).click();
+    expect(went).toEqual({ screen: 'play', levelId: dailyId() });
+    expect(root.querySelector('.home-progress')!.textContent).toContain('きょうの めいろ 1 日');
+    // 日替わりの星は本編の合計に入れない
+    expect(root.querySelector('.home-progress')!.textContent).toContain(`★ 2 / `);
   });
 
   it('総獲得星数を出す', () => {

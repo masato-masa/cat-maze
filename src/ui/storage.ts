@@ -128,6 +128,11 @@ export class ProgressStore {
     return w.levels.reduce((n, l) => n + this.getStars(l.id), 0);
   }
 
+  /** 「きょうの めいろ」をクリアした日数。続けた日数ではないので、休んでも減らない。 */
+  dailyDays(): number {
+    return Object.keys(this.data).filter((id) => /^D-\d{8}$/.test(id)).length;
+  }
+
   /** 「つづきから」で開くステージ。未クリアのうち最初のもの。 */
   firstUnclearedId(): string {
     const found = ALL_LEVELS.find((l) => !this.isCleared(l.id));

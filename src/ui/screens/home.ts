@@ -1,4 +1,5 @@
 import { ALL_LEVELS } from '../../levels/index.ts';
+import { DAILY_UNLOCK_AFTER, dailyId } from '../../levels/daily.ts';
 import { catSvg } from '../cat-sprite.ts';
 import { iconGear } from '../icons.ts';
 import { openDevSheet, openSettingsSheet } from '../sheets.ts';
@@ -16,6 +17,15 @@ export function renderHomeScreen(root: HTMLElement, deps: ScreenDeps): () => voi
   const draw = (): void => {
     const total = store.totalStars();
     const started = total > 0;
+    const today = dailyId();
+    const dailyOpen = store.isCleared(DAILY_UNLOCK_AFTER);
+    const dailyDone = store.isCleared(today);
+    const days = store.dailyDays();
+    const dailyNote = !dailyOpen
+      ? 'ステージ 12 まで すすむと あそべる'
+      : dailyDone
+        ? `きょうは クリア! ${'★'.repeat(store.getStars(today))}`
+        : 'まいにち ちがう めいろが でるよ';
 
     root.innerHTML = `
       <div class="app app-home home-screen">
@@ -33,9 +43,13 @@ export function renderHomeScreen(root: HTMLElement, deps: ScreenDeps): () => voi
               ${started ? 'つづきから' : 'はじめる'}
             </button>
             <button class="home-btn select-btn" type="button">ステージを えらぶ</button>
+            <button class="home-btn daily-btn${dailyDone ? ' done' : ''}" type="button"${dailyOpen ? '' : ' disabled'}>
+              きょうの めいろ
+              <span class="home-btn-sub">${dailyNote}</span>
+            </button>
           </div>
 
-          <p class="home-progress">★ ${total} / ${ALL_LEVELS.length * 3}</p>
+          <p class="home-progress">★ ${total} / ${ALL_LEVELS.length * 3}${days > 0 ? ` ・ きょうの めいろ ${days} 日` : ''}</p>
         </div>
 
         <button class="dev-pill" type="button">テスト用</button>
@@ -50,6 +64,7 @@ export function renderHomeScreen(root: HTMLElement, deps: ScreenDeps): () => voi
     const t = ev.target as HTMLElement;
     if (t.closest('.resume-btn')) deps.go({ screen: 'play', levelId: store.firstUnclearedId() });
     else if (t.closest('.select-btn')) deps.go({ screen: 'select' });
+    else if (t.closest('.daily-btn:not([disabled])')) deps.go({ screen: 'play', levelId: dailyId() });
     else if (t.closest('.settings-btn')) openSettingsSheet();
     else if (t.closest('.dev-pill')) openDevSheet({ store, refresh: draw });
   };

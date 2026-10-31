@@ -2,6 +2,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderGameScreen } from '../../src/ui/screens/game.ts';
 import { GameSession } from '../../src/core/game.ts';
+import { getLevel } from '../../src/levels/index.ts';
+import { solve } from '../../src/solver/search.ts';
 import { BoardView } from '../../src/ui/board-view.ts';
 import { CatSprite } from '../../src/ui/cat-sprite.ts';
 import { ProgressStore, mapKV } from '../../src/ui/storage.ts';
@@ -111,6 +113,31 @@ describe('対局画面', () => {
     expect(store.bestMoves('W1-1')).toBe(1);
     cleanup();
     vi.useRealTimers();
+  });
+
+  it('きょうの めいろも解けば記録され、「つぎへ」は出ない', async () => {
+    const id = 'D-20261101';
+    const def = getLevel(id)!;
+    open(id);
+    expect(q('.status-bar').textContent).toContain('11/1');
+    for (const p of solve(def, def.optimalMoves)!) swipeCell(p.r, p.c);
+    expect(q('.moves').textContent).toBe(String(def.optimalMoves));
+    // 魚を全部拾ってからゴールへ歩く
+    const cells = () => root.querySelectorAll<HTMLElement>('.tile-layer [data-r]');
+    for (const el of cells()) {
+      if (el.dataset['fish'] === '1') {
+        tap(el);
+        await flush();
+      }
+    }
+    for (const el of cells()) {
+      if (el.querySelector('.tile-goal')) {
+        tap(el);
+        await flush();
+      }
+    }
+    expect(store.getStars(id)).toBe(3);
+    cleanup();
   });
 
   it('Undo でスライド前に戻る', () => {
