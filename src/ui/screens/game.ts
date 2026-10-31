@@ -4,7 +4,7 @@ import { starsFor } from '../../core/rules.ts';
 import { idx } from '../../core/board.ts';
 import { getLevel, nextLevelId, worldOf } from '../../levels/index.ts';
 import { isDailyId } from '../../levels/daily.ts';
-import { endlessNumber, isEndlessId } from '../../levels/endless.ts';
+import { endlessNumber, isEndlessId, tierNote } from '../../levels/endless.ts';
 import { ensureLevel } from '../../levels/loader.ts';
 import { solveFrom } from '../../solver/search.ts';
 import { delta } from '../../core/conn.ts';
@@ -22,6 +22,12 @@ import type { ProgressStore } from '../storage.ts';
 /** "D-20261101" → "11/1"。 */
 function dailyLabel(id: string): string {
   return `${Number(id.slice(6, 8))}/${Number(id.slice(8, 10))}`;
+}
+
+/** むげんの 2 行目。段が上がる面だけ一言を添える。 */
+function endlessLabel(n: number): string {
+  const note = tierNote(n);
+  return note ? `むげん ${n} ・ ${note}` : `むげん ${n}`;
 }
 
 export type ScreenDeps = { store: ProgressStore; go: (r: Route) => void };
@@ -69,7 +75,7 @@ export function renderGameScreen(
 
         <div class="status-bar">
           <span class="stat">
-            <span class="stat-label">${world ? `${world.name} ${def.id}` : isDailyId(def.id) ? dailyLabel(def.id) : isEndlessId(def.id) ? `むげん ${endlessNumber(def.id)}` : def.id}</span>
+            <span class="stat-label">${world ? `${world.name} ${def.id}` : isDailyId(def.id) ? dailyLabel(def.id) : isEndlessId(def.id) ? endlessLabel(endlessNumber(def.id)) : def.id}</span>
           </span>
           <span class="stat">
             <span class="stat-label">てすう</span>

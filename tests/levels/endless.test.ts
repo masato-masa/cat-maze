@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { endlessLevel, isEndlessId, tierFor } from '../../src/levels/endless.ts';
+import { endlessLevel, isEndlessId, tierFor, tierNote } from '../../src/levels/endless.ts';
 import { getLevel, nextLevelId } from '../../src/levels/index.ts';
 import { validateLevel } from '../../src/levels/schema.ts';
 import { solve } from '../../src/solver/search.ts';
@@ -33,6 +33,13 @@ describe('むげん', () => {
     expect(validateLevel(def)).toEqual([]);
     expect(solve(def, def.optimalMoves)).not.toBeNull();
     expect(def.id).toBe('E-30');
+  });
+
+  it('段が上がる面だけ一言がある', () => {
+    expect(tierNote(13)).toBe('ばんが ひろくなった');
+    expect(tierNote(14)).toBeNull();
+    // 一言の面で段が本当に変わっている
+    for (const n of [6, 13, 26, 51]) expect(tierFor(n)).not.toEqual(tierFor(n - 1));
   });
 
   it('getLevel で開ける', () => {

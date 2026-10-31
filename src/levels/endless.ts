@@ -43,6 +43,18 @@ export function tierFor(n: number): Tier {
   return { size: 5, lo: 6, hi: 8, fish: 0.7, fixed: 0.25, pathLen: [8, 11] };
 }
 
+/** 段が上がる最初の番号と、そのとき出す一言。無限の面にも節目を見せる（調査 9・P12）。 */
+const TIER_NOTES: Record<number, string> = {
+  6: 'さかなが でるよ',
+  13: 'ばんが ひろくなった',
+  26: 'すこし ながい めいろ',
+  51: 'ここからが ほんばん',
+};
+
+export function tierNote(n: number): string | null {
+  return TIER_NOTES[n] ?? null;
+}
+
 const DIRS = [
   { dr: -1, dc: 0, bit: N, back: S },
   { dr: 0, dc: 1, bit: E, back: W },
