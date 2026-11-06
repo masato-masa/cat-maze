@@ -4,9 +4,9 @@ import { validateLevel } from '../../src/levels/schema.ts';
 import { newGame } from '../../src/core/game.ts';
 
 describe('levels', () => {
-  it('5 ワールド・全 30 ステージある', () => {
-    expect(WORLDS).toHaveLength(5);
-    expect(ALL_LEVELS).toHaveLength(30);
+  it('6 ワールド・全 36 ステージある', () => {
+    expect(WORLDS).toHaveLength(6);
+    expect(ALL_LEVELS).toHaveLength(36);
     for (const w of WORLDS) expect(w.levels, `${w.id}`).toHaveLength(6);
   });
 

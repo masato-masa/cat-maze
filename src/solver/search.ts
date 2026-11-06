@@ -20,7 +20,7 @@ export function stateKey(s: GameState): string {
 }
 
 /** 歩くだけでクリアできる状態か。歩行は 0 手なので、これが探索のゴール条件になる。 */
-function solvedHere(s: GameState): boolean {
+export function solvedHere(s: GameState): boolean {
   const reach = reachable(s.board, s.cat);
   let goalReachable = false;
   for (let r = 0; r < s.board.height; r++) {

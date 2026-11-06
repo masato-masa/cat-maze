@@ -32,7 +32,7 @@ export function endlessNumber(id: string): number {
   return Number(id.slice(ENDLESS_PREFIX.length));
 }
 
-type Tier = { size: number; lo: number; hi: number; fish: number; fixed: number; pathLen: [number, number] };
+export type Tier = { size: number; lo: number; hi: number; fish: number; fixed: number; pathLen: [number, number] };
 
 /** 番号が進むほど大きく・長くする。境目で急に跳ねないよう、範囲を半分ずつ重ねる。 */
 export function tierFor(n: number): Tier {
@@ -66,7 +66,7 @@ const DIRS = [
 const FILLERS = [N | S, E | W, N | E, E | S, S | W, W | N, N | E | S, E | S | W, S | W | N, W | N | E, 0];
 
 /** 解けた盤を 1 つ作る。作れなければ null。 */
-function solvedBoard(rand: () => number, t: Tier): LevelDef | null {
+export function solvedBoard(rand: () => number, t: Tier): LevelDef | null {
   const n = t.size;
   const pick = <T,>(a: readonly T[]): T => a[Math.floor(rand() * a.length)]!;
   const want = t.pathLen[0] + Math.floor(rand() * (t.pathLen[1] - t.pathLen[0] + 1));
@@ -144,7 +144,7 @@ function solvedBoard(rand: () => number, t: Tier): LevelDef | null {
 }
 
 /** かき混ぜた盤の質。押せるタイルが 1 枚しかない盤は、考えずに押すだけになる。 */
-function goodStart(def: LevelDef): boolean {
+export function goodStart(def: LevelDef): boolean {
   return slideTargets(createBoard(def)).length >= 2;
 }
 

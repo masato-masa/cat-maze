@@ -104,6 +104,6 @@ export const W5: LevelDef[] = [
     catStart: [0, 1],
     optimalMoves: 7,
     parMoves: 9,
-    hint: 'さいごの ステージ。ぜんぶ つかおう',
+    hint: 'ぜんぶ つかおう。このさきは ちょうせん',
   },
 ];
