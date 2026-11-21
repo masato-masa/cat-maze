@@ -70,7 +70,14 @@ function audio(): AudioContext | null {
     const soften = ctx.createBiquadFilter();
     soften.type = 'lowpass';
     soften.frequency.value = 4200;
-    master.connect(soften).connect(ctx.destination);
+    // 連打や BGM との重なりで割れないよう、軽くコンプレッサーを通す
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.knee.value = 24;
+    comp.ratio.value = 5;
+    comp.attack.value = 0.004;
+    comp.release.value = 0.2;
+    master.connect(soften).connect(comp).connect(ctx.destination);
     bgmBus = ctx.createGain();
     bgmBus.gain.value = BGM_GAIN;
     bgmBus.connect(ctx.destination);
@@ -182,8 +189,15 @@ function synth(ac: AudioContext, name: SfxName): void {
 }
 
 /** rate は再生速度（音の高さ）。星を 1 つずつ高くするときに使う。 */
+const lastPlayed: Partial<Record<SfxName, number>> = {};
+const MIN_GAP: Partial<Record<SfxName, number>> = { walk: 45, blocked: 110, slide: 60 };
+
 export function play(name: SfxName, rate = 1): void {
   if (muted) return;
+  // 同じ音を指の連打で重ねない
+  const now = typeof performance !== 'undefined' ? performance.now() : 0;
+  if (now - (lastPlayed[name] ?? -1e9) < (MIN_GAP[name] ?? 0)) return;
+  lastPlayed[name] = now;
   const ac = audio();
   if (!ac) return;
   if (!playSample(ac, name, rate)) synth(ac, name);
