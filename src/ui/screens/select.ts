@@ -31,7 +31,7 @@ export function renderSelectScreen(root: HTMLElement, deps: ScreenDeps): () => v
       <section class="world">
         <h2 class="world-head">
           <span class="world-name">${w.id} ${w.name}</span>
-          <span class="world-stars">${STAR} ${store.worldStars(w.id)} / ${max}</span>
+          ${w.levels.some((l) => store.isUnlocked(l.id)) ? `<span class="world-stars">${STAR} ${store.worldStars(w.id)} / ${max}</span>` : ''}
         </h2>
         <div class="level-grid">${cards}</div>
       </section>`;
