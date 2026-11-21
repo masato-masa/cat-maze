@@ -113,7 +113,7 @@
       <section class="world">
         <h2 class="world-head">
           <span class="world-name">${e.id} ${e.name}</span>
-          <span class="world-stars">${Tn} ${n.worldStars(e.id)} / ${t}</span>
+          ${e.levels.some(e=>n.isUnlocked(e.id))?`<span class="world-stars">${Tn} ${n.worldStars(e.id)} / ${t}</span>`:``}
         </h2>
         <div class="level-grid">${r}</div>
       </section>`}).join(``);e.innerHTML=`
