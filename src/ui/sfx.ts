@@ -66,13 +66,13 @@ function audio(): AudioContext | null {
     if (!Ctor) return null;
     ctx = new Ctor();
     master = ctx.createGain();
-    master.gain.value = 0.5;
+    master.gain.value = 0.8;
     const soften = ctx.createBiquadFilter();
     soften.type = 'lowpass';
     soften.frequency.value = 4200;
     // 連打や BGM との重なりで割れないよう、軽くコンプレッサーを通す
     const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -18;
+    comp.threshold.value = -12;
     comp.knee.value = 24;
     comp.ratio.value = 5;
     comp.attack.value = 0.004;
