@@ -7,6 +7,7 @@ import { W3 } from './w3.ts';
 import { W4 } from './w4.ts';
 import { W5 } from './w5.ts';
 import { W6 } from './w6.ts';
+import { W7 } from './w7.ts';
 
 export type World = { id: string; name: string; levels: LevelDef[] };
 
@@ -17,6 +18,7 @@ export const WORLDS: World[] = [
   { id: 'W4', name: 'うごくおうち', levels: W4 },
   { id: 'W5', name: 'やねのうえ', levels: W5 },
   { id: 'W6', name: 'ちょうせん', levels: W6 },
+  { id: 'W7', name: 'のりつぎ', levels: W7 },
 ];
 
 export const ALL_LEVELS: LevelDef[] = WORLDS.flatMap((w) => w.levels);

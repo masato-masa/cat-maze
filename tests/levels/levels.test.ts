@@ -4,9 +4,9 @@ import { validateLevel } from '../../src/levels/schema.ts';
 import { newGame } from '../../src/core/game.ts';
 
 describe('levels', () => {
-  it('6 ワールド・全 36 ステージある', () => {
-    expect(WORLDS).toHaveLength(6);
-    expect(ALL_LEVELS).toHaveLength(36);
+  it('7 ワールド・全 42 ステージある', () => {
+    expect(WORLDS).toHaveLength(7);
+    expect(ALL_LEVELS).toHaveLength(42);
     for (const w of WORLDS) expect(w.levels, `${w.id}`).toHaveLength(6);
   });
 
@@ -32,7 +32,8 @@ describe('levels', () => {
   });
 
   it('ワールドごとの最大手数は下がらない', () => {
-    const max = WORLDS.map((w) => Math.max(...w.levels.map((l) => l.optimalMoves)));
+    // W7（のりつぎ）は手数ではなく「運ばれる手を 2 回使う」が主題の世界なので、手数の並びからは外す。
+    const max = WORLDS.slice(0, 6).map((w) => Math.max(...w.levels.map((l) => l.optimalMoves)));
     for (let i = 1; i < max.length; i++) {
       expect(max[i]!, `${WORLDS[i]!.id} の最大手数が前より小さい`).toBeGreaterThanOrEqual(max[i - 1]!);
     }
