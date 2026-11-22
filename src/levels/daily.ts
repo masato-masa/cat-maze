@@ -4,7 +4,11 @@ import type { Conn } from '../core/conn.ts';
 import { applySlide } from '../core/slide.ts';
 import type { Board, LevelDef, Pos } from '../core/types.ts';
 import { boardToLayout, isSolvedLayout, rng, scramble } from '../solver/generate.ts';
+import { carriedWeight } from '../solver/carried.ts';
 import { solve } from '../solver/search.ts';
+
+/** 重みで選ぶために、ためる候補の数 */
+const CANDIDATES = 6;
 import { W3 } from './w3.ts';
 import { W4 } from './w4.ts';
 import { W5 } from './w5.ts';
@@ -125,7 +129,10 @@ export function dailyLevel(id: string, attempts = ATTEMPTS): LevelDef {
     [MIN_MOVES - 1, MAX_MOVES],
     [3, MAX_MOVES + 2],
   ] as const) {
-    for (let i = 0; i < attempts; i++) {
+    // 条件に合う候補を最大 CANDIDATES 個ため、運ばれる手が最短解に要るほど重みの高い面を選ぶ（縛らない）
+    let best: { def: LevelDef; len: number; w: number } | null = null;
+    let got = 0;
+    for (let i = 0; i < attempts && got < CANDIDATES; i++) {
       const src = base();
       const solved = cachedSolved(src);
       const steps = SCRAMBLE_STEPS[Math.floor(rand() * SCRAMBLE_STEPS.length)]!;
@@ -139,8 +146,12 @@ export function dailyLevel(id: string, attempts = ATTEMPTS): LevelDef {
       if (isSolvedLayout(cand)) continue;
       const sol = solve(cand, hi);
       if (!sol || sol.length < lo) continue;
-      return wrap(cand, sol.length);
+      got++;
+      const w = carriedWeight(cand, sol.length);
+      if (!best || w > best.w) best = { def: cand, len: sol.length, w };
+      if (w >= 1) break;
     }
+    if (best) return wrap(best.def, best.len);
   }
   const fallback = base();
   return wrap(fallback, fallback.optimalMoves);

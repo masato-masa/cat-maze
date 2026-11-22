@@ -4,6 +4,7 @@ import type { Board, LevelDef, Tile } from '../core/types.ts';
 import { slideTargets } from '../core/slide.ts';
 import { createBoard } from '../core/board.ts';
 import { boardToLayout, isSolvedLayout, rng, scramble } from '../solver/generate.ts';
+import { carriedWeight } from '../solver/carried.ts';
 import { solve } from '../solver/search.ts';
 import { dailyLevel } from './daily.ts';
 
@@ -148,6 +149,9 @@ export function goodStart(def: LevelDef): boolean {
   return slideTargets(createBoard(def)).length >= 2;
 }
 
+/** 重みで選ぶために、ためる候補の数 */
+const CANDIDATES = 6;
+
 /**
  * 番号 n の面を作る。
  * 梯子: 目標の手数で ATTEMPTS 回 → 手数の範囲を下へ 1 広げて同じ回数 → きょうの めいろの方式（必ず出る）。
@@ -165,8 +169,12 @@ export function endlessLevel(n: number, attempts = 60): LevelDef {
     hint: undefined,
   });
 
+  // 梯子の各段で、条件に合う候補を最大 CANDIDATES 個ため、「運ばれる手が最短解に要る」ほど重みの高い面を選ぶ。
+  // 要る面だけに縛らない（無ければ、ためた中で最初のものを出す）。乱数は番号から決まるので、同じ番号は同じ面。
   for (const lo of [t.lo, Math.max(1, t.lo - 1)]) {
-    for (let i = 0; i < attempts; i++) {
+    let best: { def: LevelDef; len: number; w: number } | null = null;
+    let got = 0;
+    for (let i = 0; i < attempts && got < (t.hi >= 8 ? 3 : CANDIDATES); i++) {
       const solved = solvedBoard(rand, t);
       const steps = t.hi * 2 + Math.floor(rand() * 4);
       const seed = Math.floor(rand() * 0x7fffffff) + 1;
@@ -176,8 +184,12 @@ export function endlessLevel(n: number, attempts = 60): LevelDef {
       if (isSolvedLayout(cand) || !goodStart(cand)) continue;
       const sol = solve(cand, t.hi);
       if (!sol || sol.length < lo) continue;
-      return wrap(cand, sol.length);
+      got++;
+      const w = carriedWeight(cand, sol.length);
+      if (!best || w > best.w) best = { def: cand, len: sol.length, w };
+      if (w >= 1) break; // 運ばれる手が要る面が出たら十分
     }
+    if (best) return wrap(best.def, best.len);
   }
   const fallback = dailyLevel(`D-${String(n).padStart(8, '0')}`);
   return wrap(fallback, fallback.optimalMoves);
