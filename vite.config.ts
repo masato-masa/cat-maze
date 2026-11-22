@@ -8,5 +8,7 @@ export default defineConfig(({ command }) => ({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    // 深い面（W6）の検証はソルバーが 10 秒前後かかる。負荷が高い日でも落ちないよう余裕を持たせる。
+    testTimeout: 60_000,
   },
 }));
