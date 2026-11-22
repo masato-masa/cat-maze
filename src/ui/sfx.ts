@@ -100,7 +100,7 @@ const buffers = new Map<SfxName, AudioBuffer>();
 
 /** 録音ごとの音量。録音はピーク 0.9 にそろえてあるので、役割に合わせて下げる。 */
 const SAMPLE_GAIN: Record<SfxName, number> = {
-  walk: 0.22,
+  walk: 0.35,
   slide: 0.55,
   blocked: 0.4,
   fish: 0.6,
