@@ -94,11 +94,9 @@ describe('ホーム画面', () => {
     expect(went).toEqual({ screen: 'play', levelId: 'W1-2' });
   });
 
-  it('きょうの めいろは W2 を終えるまで押せない', () => {
+  it('きょうの めいろ・むげんは W2 を終えるまで出さない', () => {
     renderHomeScreen(root, { store, go });
-    const btn = root.querySelector<HTMLButtonElement>('.daily-btn')!;
-    expect(btn.disabled).toBe(true);
-    btn.click();
+    expect(root.querySelector('.daily-btn')).toBeNull();
     expect(went).toBeNull();
   });
 

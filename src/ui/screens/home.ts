@@ -23,14 +23,11 @@ export function renderHomeScreen(root: HTMLElement, deps: ScreenDeps): () => voi
     const dailyDone = store.isCleared(today);
     const days = store.dailyDays();
     const best = store.endlessBest();
-    const endlessNote = !dailyOpen
-      ? 'ステージ 12 まで すすむと あそべる'
-      : best > 0
+    // まだ遊べない「きょうの めいろ」「むげん」は出さない（鍵つきの灰色ボタンは画面のノイズ）。
+    const endlessNote = best > 0
         ? `${best} めんまで クリア`
         : 'めいろが どこまでも つづく';
-    const dailyNote = !dailyOpen
-      ? 'ステージ 12 まで すすむと あそべる'
-      : dailyDone
+    const dailyNote = dailyDone
         ? `きょうは クリア! ${'★'.repeat(store.getStars(today))}`
         : 'まいにち ちがう めいろが でるよ';
 
@@ -50,14 +47,16 @@ export function renderHomeScreen(root: HTMLElement, deps: ScreenDeps): () => voi
               ${started ? 'つづきから' : 'はじめる'}
             </button>
             <button class="home-btn select-btn" type="button">ステージを えらぶ</button>
-            <button class="home-btn daily-btn${dailyDone ? ' done' : ''}" type="button"${dailyOpen ? '' : ' disabled'}>
+            ${dailyOpen ? `
+            <button class="home-btn daily-btn${dailyDone ? ' done' : ''}" type="button">
               きょうの めいろ
               <span class="home-btn-sub">${dailyNote}</span>
             </button>
-            <button class="home-btn daily-btn endless-btn" type="button"${dailyOpen ? '' : ' disabled'}>
+            <button class="home-btn daily-btn endless-btn" type="button">
               むげん
               <span class="home-btn-sub">${endlessNote}</span>
             </button>
+            ` : ''}
           </div>
 
           <p class="home-progress">★ ${total} / ${ALL_LEVELS.length * 3}${days > 0 ? ` ・ きょうの めいろ ${days} 日` : ''}</p>
