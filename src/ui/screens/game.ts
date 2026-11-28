@@ -49,7 +49,11 @@ export function renderGameScreen(
 ): () => void {
   const def = getLevel(levelId);
   if (!def) {
-    root.innerHTML = '<p class="notice">そのステージは ありません</p>';
+    // 戻るボタンが無いと行き止まりになる（古いリンクや保存の番号から来たとき）。
+    root.innerHTML =
+      '<p class="notice">そのステージは ありません</p><div class="notice"><button class="sheet-btn" type="button">ホームへ もどる</button></div>';
+    const back = () => deps.go({ screen: 'home' });
+    root.querySelector('button')!.addEventListener('click', back);
     return () => {};
   }
 

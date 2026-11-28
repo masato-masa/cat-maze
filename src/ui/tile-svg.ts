@@ -21,25 +21,25 @@ const EDGE: Record<Dir, [number, number]> = {
 };
 
 /** 道の太さ。縁取りの層のほうが太く、その上に細い塗りの層を重ねる。 */
-const ROAD_OUTLINE_W = 40;
-const ROAD_FILL_W = 32;
-const HUB_OUTLINE_R = 20;
-const HUB_FILL_R = 16;
+// 縁取りは持たない。茶色の縁が隣のタイルとの境目に出て、道が途切れて見えていたため、
+// 道は 1 色の平らな帯にして、隣のタイルへそのまま繋がって見えるようにする。
+const ROAD_FILL_W = 30;
+const HUB_FILL_R = 15;
 
 function roadSvg(conn: number): string {
   const open = ALL_DIRS.filter((d) => isOpen(conn, d));
   if (open.length === 0) return '';
 
+  // カーブ（直角に開いた 2 本）は 1 本の折れ線にして、外側の角を丸める。
+  if (open.length === 2 && open[0]! % 2 !== open[1]! % 2) {
+    const [a, b] = open as [Dir, Dir];
+    return `<g class="tile-road-fill" stroke-width="${ROAD_FILL_W}"><path d="M ${EDGE[a][0]} ${EDGE[a][1]} L 50 50 L ${EDGE[b][0]} ${EDGE[b][1]}" /></g>`;
+  }
   const lines = open
     .map((d) => `<line x1="50" y1="50" x2="${EDGE[d][0]}" y2="${EDGE[d][1]}" />`)
     .join('');
 
-  return (
-    `<g class="tile-road-outline" stroke-width="${ROAD_OUTLINE_W}">` +
-    `${lines}<circle cx="50" cy="50" r="${HUB_OUTLINE_R}" /></g>` +
-    `<g class="tile-road-fill" stroke-width="${ROAD_FILL_W}">` +
-    `${lines}<circle cx="50" cy="50" r="${HUB_FILL_R}" /></g>`
-  );
+  return `<g class="tile-road-fill" stroke-width="${ROAD_FILL_W}">${lines}<circle cx="50" cy="50" r="${HUB_FILL_R}" /></g>`;
 }
 
 /** ゴールの家。猫と同じ画風で描いた 1 枚絵。 */

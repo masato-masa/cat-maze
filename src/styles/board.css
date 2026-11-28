@@ -14,7 +14,7 @@
 }
 
 .board {
-  --gap: 6px;
+  --gap: 3px;
   /* 1 マスの大きさは、横に入る大きさと縦に入る大きさの小さい方で決まる。
      こうすると縦長・横長どちらの盤面でも画面からはみ出さない。
      min(92vw, 452px) はカードの外寸（にゃんどくの実測値）なので、
@@ -159,6 +159,8 @@
   fill: var(--road);
 }
 
+
+
 .tile-road-outline line,
 .tile-road-fill line {
   stroke-linecap: round;
@@ -264,6 +266,24 @@
   transition: stroke var(--anim) var(--ease), fill var(--anim) var(--ease);
 }
 
+/* 中心の丸は塗りだけ（線も引くと、線幅ぶん膨らんで道より太い玉になる）。 */
+.tile-road-fill circle,
+.tile.reachable .tile-road-fill circle {
+  stroke: none;
+}
+
+/* カーブは 1 本の折れ線で描き、外側の角を丸める。 */
+.tile-road-fill path {
+  fill: none;
+  stroke: var(--road);
+  stroke-linejoin: round;
+  stroke-linecap: butt;
+  transition: stroke var(--anim) var(--ease);
+}
+.tile.reachable .tile-road-fill path {
+  stroke: var(--road-lit);
+}
+
 /* 移動可能（スライドできる）マス・ヒントの強調は、画像の上に重ねた枠で示す。
    複数の状態が同時に成立しても互いを消さないよう、カスタムプロパティに
    書き込んでから 1 か所でまとめて適用する。 */
@@ -277,8 +297,7 @@
 }
 
 .tile.slidable .tile-visual::after {
-  --tile-ring: inset 0 0 0 4px var(--accent), 0 0 8px 1px
-    color-mix(in srgb, var(--accent) 75%, transparent);
+  --tile-ring: inset 0 0 0 3px var(--accent);
 }
 
 .tile.hinted .tile-visual::after {

@@ -39,21 +39,29 @@ describe('createTileEl が描く見た目', () => {
     expect(html(tile('X'))).not.toContain('tile-road-svg');
   });
 
-  it('開いている方角の数だけ線を引く（太さ・縁取りは形によらず共通）', () => {
-    expect((html(tile('N')).match(/<line/g) ?? []).length).toBe(2); // 縁取り + 塗りの2層
-    expect((html(tile('NS')).match(/<line/g) ?? []).length).toBe(4);
-    expect((html(tile('NESW')).match(/<line/g) ?? []).length).toBe(8);
+  it('開いている方角の数だけ線を引く（縁取りは無く、1 層だけ）', () => {
+    expect((html(tile('N')).match(/<line/g) ?? []).length).toBe(1);
+    expect((html(tile('NS')).match(/<line/g) ?? []).length).toBe(2);
+    expect((html(tile('NESW')).match(/<line/g) ?? []).length).toBe(4);
+  });
+
+  it('カーブは 1 本の折れ線（外側の角が丸い）で描く', () => {
+    const out = html(tile('NE'));
+    expect((out.match(/<path/g) ?? []).length).toBe(1);
+    expect(out).not.toContain('<line');
   });
 
   it('道が無いタイルには中心の丸も出さない', () => {
-    expect(html(tile('X'))).not.toContain('tile-road-outline');
-    expect(html(tile('NS'))).toContain('tile-road-outline');
+    expect(html(tile('X'))).not.toContain('tile-road-fill');
+    expect(html(tile('NS'))).toContain('tile-road-fill');
+    expect(html(tile('NS'))).not.toContain('tile-road-outline');
   });
 
   it('道は形によらず同じ太さで描く', () => {
-    const out = html(tile('NESW'));
-    expect((out.match(/stroke-width="40"/g) ?? []).length).toBe(1);
-    expect((out.match(/stroke-width="32"/g) ?? []).length).toBe(1);
+    for (const k of ['N', 'NS', 'NE', 'NESW']) {
+      const out = html(tile(k));
+      expect((out.match(/stroke-width="30"/g) ?? []).length).toBe(1);
+    }
   });
 
   it('固定タイルには専用のクラスが付く（画像は使わない）', () => {
@@ -116,7 +124,7 @@ describe('タイルの差分更新', () => {
     updateTileEl(el, tile('NESW'));
     const after = el.querySelector('.tile-road-svg');
     expect(after).not.toBe(before);
-    expect((after!.innerHTML.match(/<line/g) ?? []).length).toBe(8);
+    expect((after!.innerHTML.match(/<line/g) ?? []).length).toBe(4);
   });
 
   it('魚の付け外しは要素を作り直さずに行う', () => {
