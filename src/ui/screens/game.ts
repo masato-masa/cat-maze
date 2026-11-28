@@ -200,7 +200,8 @@ export function renderGameScreen(
 
   // 説明は最初の 1 手まで。ずっと出しておくと画面が説明くさくなる。
   function updateControls(): void {
-    controls.hidden = session.current.moves > 0;
+    // 説明は、まだ 1 面もクリアしていない人の最初の 1 手までだけ（慣れた人の画面には出さない）
+    controls.hidden = session.current.moves > 0 || deps.store.totalStars() > 0;
   }
 
   function draw(): void {
